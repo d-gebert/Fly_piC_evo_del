@@ -1,14 +1,6 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use lib '/Users/dgebert/Dropbox/Perlmodules';
-use lib '/home/dgebert/Dropbox/Perlmodules';
-use FileIO;
-use FastaIO;
-use SeqMan;
-use BioStat;
-use LWP::Simple;
-use Cwd;
 
 # Global constants
 # Global variables
@@ -49,7 +41,7 @@ foreach my $i (0..$#species) {
         # Get name of flankgenes file
         my $file = "${spec_x}_vs_${spec_y}.flankgenes.txt";
         # Get synteny file data
-        my @flankgenes_data = FileIO::get_file_data_array($file);
+        my @flankgenes_data = get_file_data_array($file);
         # Initialize synteny data variables
         my %pic_loc = ();
         my $pic_idn = 0;
@@ -332,24 +324,24 @@ foreach my $i (0..$#species) {
 			push(@zero_pt_lens,$zero_pt_len);
 			# Count processed loci
 			$num_locs++;
-			last if $num_locs == 535;
+			#last if $num_locs == 535;
         }
-		last if $num_locs == 535;
+		#last if $num_locs == 535;
 	}
-	last if $num_locs == 535;
+	#last if $num_locs == 535;
 }
 
 #print(STDERR "$num_locs\n");
-my $median_loc_len = BioStat::get_median(\@zero_pt_lens);
-my $averag_loc_len = BioStat::get_mean(\@zero_pt_lens);
-my $median_loc_len_hom = BioStat::get_median(\@zero_pt_lens_hom);
-my $averag_loc_len_hom = BioStat::get_mean(\@zero_pt_lens_hom);
+my $median_loc_len = get_median(\@zero_pt_lens);
+my $averag_loc_len = get_mean(\@zero_pt_lens);
+my $median_loc_len_hom = get_median(\@zero_pt_lens_hom);
+my $averag_loc_len_hom = get_mean(\@zero_pt_lens_hom);
 
 printf(STDERR "%d\t%d\t%d\t%d\n", $median_loc_len,$averag_loc_len,$median_loc_len_hom,$averag_loc_len_hom);
 
 # Open output file
 my $outfile = "BREAKPOINTS.txt";
-my $out = FileIO::open_outfile($outfile);
+my $out = open_outfile($outfile);
 
 my $bin_size = 15_000;
 my %brp_bins = ();
@@ -372,3 +364,105 @@ foreach my $i (sort {$a <=> $b} keys %brp_bins) {
 }
 
 exit;
+
+################################# subroutines #################################
+
+# Save fasta data as hash
+# Usage: my $sequences = get_fasta_seqs($infile);
+sub get_fasta_seqs {
+   # Take fasta file name
+   my($file,$short) = @_;
+   # Variables
+   my $name = '';
+   my %sequences = ();
+   # Open file
+   my $in = open_infile($file);
+   # Extract sequence and save with name
+   while (my $line = <$in>) {
+       $line =~ s/\s+$//; #better chomp
+       if ($line =~ /^>/) {
+           ($name) = ($line =~ />(.*)$/);
+           if ($short) { $name =~ s/\s.*// }
+       } else {
+           $sequences{$name} .= $line;
+       }
+   }
+   return \%sequences;
+}
+
+# Open input file
+# Usage: my $in = open_infile($infile);
+sub open_infile {
+	# Take input file name
+    my($file) = @_;
+    # Open input file
+    my $fh;
+    if ($file =~ /.gz$/) {
+		open($fh, "gunzip -c $file |") or die("Cannot open file '$file': $!\n");
+	} else {
+    	open($fh, '<', $file) or die("Cannot open file '$file': $!\n");
+    }
+    # Return filehandle
+    return $fh;
+}
+
+# Open output file
+# Usage: my $out = open_outfile($outfile);
+sub open_outfile {
+	# Take output file name
+    my($file) = @_;
+    # Open output file
+    open(my $fh, '>', $file) or die("Cannot open file '$file': $!\n");
+    # Return filehandle
+    return $fh;
+}
+
+# Extract file data and save in array
+# Usage: my @filedata = get_file_data_array($file);
+sub get_file_data_array {
+	# Take input file name
+    my($file,$ref_opt) = @_;
+    my @filedata = ();
+    $ref_opt = 0 unless $ref_opt;
+	# Open input file
+    my $fh = open_infile($file);
+	# Extract lines and save in array
+    while (my $line = <$fh>) {
+    	$line =~ s/\s+$//; #better chomp
+    	push(@filedata, $line);
+    }
+	# Close file
+    close($fh) or die("Unable to close: $!\n");
+	# Return array containing file data
+    if ($ref_opt) {
+    	return \@filedata;
+    } else {
+    	return @filedata;
+    }
+}
+
+# Calculate mean of array values
+sub get_mean {
+	# Take array list
+	my($array) = @_;
+	# Number of values
+	my $N = scalar(@{$array});
+	if ($N == 0) { return 0 }
+	# Sum values
+	my $sum = get_sum($array);
+	# Calculate mean value
+	my $mean = $sum/$N;
+	# Return mean
+	return $mean;
+}
+
+# Calculate meadian of array values
+sub get_median {
+	# Take array list
+	my($array) = @_;
+	# Get median, 50th percentile
+	my $median = get_percentile_value($array, 0.5);
+	$median = get_mean($array) if scalar(@{$array})<3;
+	# Return median
+	return $median;
+}
