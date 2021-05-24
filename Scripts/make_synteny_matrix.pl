@@ -57,14 +57,12 @@ foreach my $i (0..$#species) {
 		my $spec_y = $species[$j];
 		# Skip if same species
 		next if $spec_x eq $spec_y;
-		#next unless $spec_x eq 'Dmel';# && $spec_y eq 'Dyak';
+		#next unless $spec_x eq 'Dmel' && $spec_y eq 'Dsec';
 		# If no hompics file exists, run pipeline to get hompics
-		#unless (-e "${spec_x}_vs_${spec_y}.hompics.txt") {
-			#print("perl Get_pic_synteny_0.1.29.pl ${spec_x}.fin_pics.top.bed ${spec_x}_filtered_50k.fasta ${spec_x}_chromosome.fasta ${spec_x}_genes.gff dmel_orthologs_in_drosophila_species_fb_2019_04.tsv ${spec_y}_filtered_50k.fasta ${spec_y}_chromosome.fasta ${spec_y}_CDS.fasta ${spec_x}_filtered_50k.fasta.out ${spec_y}_filtered_50k.fasta.out ${spec_x}.filtered.23-29.f2.uni.rpm.bed ${spec_y}.filtered.23-29.f2.uni.rpm.bed");
-			#system("perl Get_pic_synteny_0.1.29.pl ${spec_x}.fin_pics.top.bed ${spec_x}_filtered_50k.fasta ${spec_x}_chromosome.fasta ${spec_x}_genes.gff dmel_orthologs_in_drosophila_species_fb_2019_04.tsv ${spec_y}_filtered_50k.fasta ${spec_y}_chromosome.fasta ${spec_y}_CDS.fasta ${spec_x}_filtered_50k.fasta.out ${spec_y}_filtered_50k.fasta.out ${spec_x}.filtered.23-29.f2.uni.rpm.bed ${spec_y}.filtered.23-29.f2.uni.rpm.bed");
-			print("perl Get_pic_synteny_0.1.30.pl ${spec_x}.fin_pics.top.bed ${spec_x}_filtered_50k.fasta ${spec_x}_chromosome.fasta ${spec_x}_genes.gff dmel_orthologs_in_drosophila_species_fb_2019_04.tsv ${spec_y}_filtered_50k.fasta ${spec_y}_chromosome.fasta ${spec_y}_CDS.fasta ${spec_x}_filtered_50k.fasta.out ${spec_y}_filtered_50k.fasta.out ${spec_x}.filtered.23-29.f2.uni.rpm.bed ${spec_y}.filtered.23-29.f2.uni.rpm.bed");
-			system("perl Get_pic_synteny_0.1.30.pl ${spec_x}.fin_pics.top.bed ${spec_x}_filtered_50k.fasta ${spec_x}_chromosome.fasta ${spec_x}_genes.gff dmel_orthologs_in_drosophila_species_fb_2019_04.tsv ${spec_y}_filtered_50k.fasta ${spec_y}_chromosome.fasta ${spec_y}_CDS.fasta ${spec_x}_filtered_50k.fasta.out ${spec_y}_filtered_50k.fasta.out ${spec_x}.filtered.23-29.f2.uni.rpm.bed ${spec_y}.filtered.23-29.f2.uni.rpm.bed");
-		#}
+		unless (-e "${spec_x}_vs_${spec_y}.hompics.txt") {
+			print("perl get_syntenic_loci.pl ${spec_x}.fin_pics.top.bed ${spec_x}_filtered_50k.fasta ${spec_x}_chromosome.fasta ${spec_x}_genes.gff dmel_orthologs_in_drosophila_species_fb_2019_04.tsv ${spec_y}_filtered_50k.fasta ${spec_y}_chromosome.fasta ${spec_y}_CDS.fasta ${spec_x}_filtered_50k.fasta.out ${spec_y}_filtered_50k.fasta.out ${spec_x}.filtered.23-29.f2.uni.rpm.bed ${spec_y}.filtered.23-29.f2.uni.rpm.bed");
+			system("perl get_syntenic_loci.pl ${spec_x}.fin_pics.top.bed ${spec_x}_filtered_50k.fasta ${spec_x}_chromosome.fasta ${spec_x}_genes.gff dmel_orthologs_in_drosophila_species_fb_2019_04.tsv ${spec_y}_filtered_50k.fasta ${spec_y}_chromosome.fasta ${spec_y}_CDS.fasta ${spec_x}_filtered_50k.fasta.out ${spec_y}_filtered_50k.fasta.out ${spec_x}.filtered.23-29.f2.uni.rpm.bed ${spec_y}.filtered.23-29.f2.uni.rpm.bed");
+		}
 		push(@files,"${spec_x}_vs_${spec_y}.hompics.txt");
 	}
 }

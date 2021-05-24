@@ -1,9 +1,13 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-# Modules for graphical output
-use LWP::Simple;
-use GD::Simple;
+
+# Load modules
+use Getopt::Long;
+# Check if PDF::Create is installed
+my $pdf_installed = 0;
+eval { require PDF::Create };
+unless ($@) { $pdf_installed = 1; }
 
 # Global constants
 my %specs_inc = ('Dmel'=>1,'Dsec'=>1,'Dsim'=>1,'Dyak'=>1,'Dana'=>1,'Dpse'=>1,'Dper'=>1,'Dwil'=>1,'Dmoj'=>1,'Dvir'=>1);
@@ -335,7 +339,7 @@ close($out1);
 
 my $outfile2 = "${spec1_id}_vs_${spec2_id}.hompics.txt";
 my $out2 = open_outfile($outfile2);
-print($out2 "pic_idn\tpic_loc\tpic_ups\tpic_dos\thom_ups\thom_dos\thom_pic\thom_rpm\thom_rpkm\thom_len\thom_lenp\trep_perc\tgen_perc\tass_dir\n");
+print($out2 "pic_idn\tpic_loc\tpic_ups\tpic_dos\thom_ups\thom_dos\thom_pic\thom_rpm\thom_rpkm\thom_len\thom_lenp\trep_perc\tgen_perc\n");
 
 # Output syntenic region and check for inversions
 my %ort_locs_s2_new = ();
@@ -730,20 +734,6 @@ foreach my $pic (sort {$a <=> $b} keys %pic_loc) {
 	my @hom_pic_loc = split(/:|-|\|/,$hom_pic_loc);
 	@{$hom_pic_locs{$pic}} = @hom_pic_loc;
 
-	## Determine assembly orientation
-	my $assembly_status = "";
-	# Check if signed permutation includes minus genes
-	my @for_minus_gens = grep {$_ < 0} @syn_lst_ns2;
-	# Check if reversed permutation includes minus genes
-	my @syn_lst_ns2_rev = map {$_ * -1} reverse(@syn_lst_ns2);
-	my @rev_minus_gens = grep {$_ < 0} @syn_lst_ns2_rev;
-	# Compare shares of minus genes in forward and reverse signed permutations
-	if (scalar(@rev_minus_gens) >= scalar(@for_minus_gens)) {
-		$assembly_status = "Parallel assembly";
-	} else {
-		$assembly_status = "Reversed assembly";
-	}
-
 	# Get rpm for putative homologous pic region
 	if ($hom_pic_locs{$pic}[0] ne 'NA' && $global_rds2) {
 		# Get pic coordinates
@@ -904,13 +894,7 @@ foreach my $pic (sort {$a <=> $b} keys %pic_loc) {
 	# Output repeat share for identified homologous pic region
 	print($out2 "$rep_percs{$pic}\t");
 	# Output gene share for identified homologous pic region
-	print($out2 "$gen_percs{$pic}\t");
-	# Output assembly orientation
-	print($out2 "$assembly_status\n");
-	# Output number of breakpoints
-	#print($out2 "$n_breakpoints\t");
-	# Output number of breakpoints
-	#print($out2 "$pic_break\n");
+	print($out2 "$gen_percs{$pic}\n");
 }
 close($out2);
 
@@ -1093,647 +1077,432 @@ foreach my $pid (sort keys %pic_loc) {
 	}
 }
 
-# Create graphical output on synteny for each pic
-# Global graphic coordinates
-my $l_space = 20;
-foreach my $pid (sort keys %pic_loc) {
-	# Skip if no flank gene homologs on either side
-	unless ($ups_hcs{$pid} || $dos_hcs{$pid}) { next; }
-	my $pic_chr = $pic_loc{$pid}[0];
-	# Create a new image (width, height)
-	my($width,$height) = (1050,1000);
-	my $img = GD::Simple->new($width,$height);
-	## Species 1 contig region
-	# Caption
-	$img->bgcolor('black');
-	$img->fgcolor('black');
-	$img->moveTo($l_space, 30);
-	$img->fontsize(10);
-	my $sp1_chr = $pic_loc{$pid}[0];
-	my $sp1_beg = add_thousands_separators($pic_loc{$pid}[3]);
-	my $sp1_end = add_thousands_separators($pic_loc{$pid}[6]);
-	$img->string("$sp1_chr:$sp1_beg-$sp1_end");
-	# Scale
-	my $scale_len = 100;
-	$img->moveTo(900+$l_space, 30);
-	$img->lineTo(900+$l_space+$scale_len, 30);
-	$img->moveTo(900+$l_space+(($scale_len/2)-10), 30);
-	my $scale_bps = (($pic_loc{$pid}[6]-$pic_loc{$pid}[3]+1)/1000)*$scale_len;
-	my $scale_kbs = int($scale_bps/1000);
-	$img->string("${scale_kbs}kb");
-	# Contig of pic and flanks
-	$img->bgcolor(255,255,255);
-	$img->fgcolor('black');
-	$img->rectangle($l_space, 10+30, 1000+$l_space, 40+30);
-	# Y-axis labels
-	$img->fontsize(10);
-	$img->moveTo($l_space-10, 40+10);
-	$img->string("+");
-	$img->moveTo($l_space-10, 70+2);
-	$img->string("-");
-	# Contig of pic
-	$img->bgcolor('gray');
-	$img->fgcolor('gray');
-	# Horizontal line
-	$img->moveTo($l_space+$convx_a{$pid}{$pic_loc{$pid}[1]}, 50-15);
-	$img->lineTo($l_space+$convx_a{$pid}{$pic_loc{$pid}[2]}, 50-15);
-	# Vertical line
-	$img->moveTo($l_space+$convx_a{$pid}{$pic_loc{$pid}[1]}, 50-15);
-	$img->lineTo($l_space+$convx_a{$pid}{$pic_loc{$pid}[1]}, 50-13);
-	# Vertical line
-	$img->moveTo($l_space+$convx_a{$pid}{$pic_loc{$pid}[2]}, 50-15);
-	$img->lineTo($l_space+$convx_a{$pid}{$pic_loc{$pid}[2]}, 50-13);
-
-	# Load pdf module
-	use PDF::Create;
-	use PDF::Create::Page;
-	# Create pdf file
-	my $pdf = PDF::Create->new(
-	    'filename'     => "$gd_dir/$img_prefix.pic_$pid.pdf",
-	    'Author'       => 'Daniel Gebert',
-	    'Title'        => "$img_prefix.pic_$pid.pdf",
-	    'CreationDate' => [ localtime ]
-	);
-	# Add a A4 sized page
-	my $root = $pdf->new_page('MediaBox' => $pdf->get_page_size('A2'));
-	# Add a page which inherits its attributes from $root
-	my $page1 = $root->new_page;
-	# Prepare a font
-	my $font = $pdf->font('BaseFont' => 'Helvetica');
-	## Species 1 contig region
-	# Caption
-	$page1->string($font, 15, 40, 1650-20, "$sp1_chr:$sp1_beg-$sp1_end");
-	# Scale pdf
-	$page1->setrgbcolorstroke(0.1,0.1,0.1);
-	$page1->line(900+40, 1650-20, 900+40+$scale_len, 1650-20);
-	$page1->stringc($font, 15, 900+$scale_len-10, 1650-16, "${scale_kbs}kb");
-	# piC loc
-	$page1->setrgbcolorstroke(0.6,0.6,0.6);
-	$page1->line(40+$convx_a{$pid}{$pic_loc{$pid}[1]}, 1650-(20)-8, 40+$convx_a{$pid}{$pic_loc{$pid}[2]}, 1650-(20)-8);
-	$page1->line(40+$convx_a{$pid}{$pic_loc{$pid}[1]}, 1650-(20)-8, 40+$convx_a{$pid}{$pic_loc{$pid}[1]}, 1650-(3+20)-8);
-	$page1->line(40+$convx_a{$pid}{$pic_loc{$pid}[2]}, 1650-(20)-8, 40+$convx_a{$pid}{$pic_loc{$pid}[2]}, 1650-(3+20)-8);
-
-	# Positions of other genes in region
-	foreach my $i (0..1) {
-	    # Sort genes by position on contig
-	    my @genes_os1 = sort {$gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$a}->[0] <=> $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$b}->[0]} keys %{$gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}};
-	    # Go through each flanking gene on contig and search ortholog sequences in new assembly
-	    foreach my $gene (@genes_os1) {
-	        # Get gene coordinates
-	        my $g_beg = $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$gene}->[0];
-	        my $g_end = $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$gene}->[1];
-	        my $g_str = $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$gene}->[2] eq 'plus' ? '+' : '-';
-			# Check overlap with flank genes
-			my $overlap = 0;
-			foreach my $g (@{$ups_gcs{$pid}}) {
-				if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
-					$overlap = 1;
-				}
-			}
-			foreach my $g (@{$dos_gcs{$pid}}) {
-				if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
-					$overlap = 1;
-				}
-			}
-			# Skip if overlaps found
-			if ($overlap) { next; }
-			$img->bgcolor(210,210,210);
-	        $img->fgcolor(210,210,210);
-			if ($convx_a{$pid}{$g_end}-$convx_a{$pid}{$g_beg} <= 1) { $img->fgcolor(210,210,210); }
-	        if ($g_str eq '+') {
-	            $img->rectangle($l_space+$convx_a{$pid}{$g_beg}, 10+30, $l_space+$convx_a{$pid}{$g_end}, 24+30);
-				$page1->setrgbcolor(240/255,240/255,240/255);
-		        $page1->rectangle(40+$convx_a{$pid}{$g_beg}, 1650-(20+30), ($convx_a{$pid}{$g_end}-$convx_a{$pid}{$g_beg}+1), 15);
-		        $page1->fill();
-	        } elsif ($g_str eq '-') {
-	            $img->rectangle($l_space+$convx_a{$pid}{$g_beg}, 26+30, $l_space+$convx_a{$pid}{$g_end}, 40+30);
-				$page1->setrgbcolor(240/255,240/255,240/255);
-		        $page1->rectangle(40+$convx_a{$pid}{$g_beg}, 1650-(35+30), ($convx_a{$pid}{$g_end}-$convx_a{$pid}{$g_beg}+1), 15);
-		        $page1->fill();
-	        }
-	    }
-	}
-	# Positions of upstream flank genes
-	foreach my $gen (@{$ups_gcs{$pid}}) {
-		$img->bgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-	    $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-		$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
-		#if ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]} <= 1) { $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}}); }
-	    if ($gen->[3] eq '+') {
-	        $img->rectangle($l_space+$convx_a{$pid}{$gen->[1]}, 10+30, $l_space+$convx_a{$pid}{$gen->[2]}, 24+30);
-	        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(20+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
-	        $page1->fill();
-	    } elsif ($gen->[3] eq '-') {
-	        $img->rectangle($l_space+$convx_a{$pid}{$gen->[1]}, 26+30, $l_space+$convx_a{$pid}{$gen->[2]}, 40+30);
-	        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(35+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
-	        $page1->fill();
-	    }
-	}
-	# Positions of downstream flank genes
-	foreach my $gen (@{$dos_gcs{$pid}}) {
-		$img->bgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-	    $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-		$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
-		#if ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]} <= 1) { $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}}); }
-	    if ($gen->[3] eq '+') {
-	        $img->rectangle($l_space+$convx_a{$pid}{$gen->[1]}, 10+30, $l_space+$convx_a{$pid}{$gen->[2]}, 24+30);
-	        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(20+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
-	        $page1->fill();
-	    } elsif ($gen->[3] eq '-') {
-	        $img->rectangle($l_space+$convx_a{$pid}{$gen->[1]}, 26+30, $l_space+$convx_a{$pid}{$gen->[2]}, 40+30);
-	        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(35+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
-	        $page1->fill();
-	    }
-	}
-	# Contig rectangle
-	$page1->setrgbcolorstroke(0.1,0.1,0.1);
-	$page1->rectangle(40,1650-65,1000,30);
-	$page1->stroke();
-	# Contig of pic and flanks
-	$img->bgcolor(undef);
-	$img->fgcolor('black');
-	$img->rectangle($l_space, 10+30, 1000+$l_space, 40+30);
-	# Repeat annotation
-	# Y-axis line
-	$img->bgcolor('black');
-	$img->fgcolor('black');
-	$img->moveTo($l_space, 80);
-	$img->lineTo($l_space, 110);
-	# Y-axis labels
-	$img->fontsize(10);
-	$img->moveTo($l_space-10, 80+10);
-	$img->string("+");
-	$img->moveTo($l_space-10, 110+2);
-	$img->string("-");
-	if ($spec1_rmout_file) {
-		# Repeat positions
-		foreach my $rep (@{$rep_data_s1->{$pic_loc{$pid}[0]}}) {
-			# Repeat coordinates
-			my $rep_beg = $rep->[5];
-			my $rep_end = $rep->[6];
-			my $rep_str = $rep->[8];
-			my $rep_div = $rep->[1];
-			# Check if repeat is in region
-			if ($pic_loc{$pid}[3] < $rep_beg && $pic_loc{$pid}[6] > $rep_end) {
-				# Calculate gray shade according to sequence divergence
-				my @rgb = (255*($rep_div/40),255*($rep_div/40),255*($rep_div/40));
-				# Get repeat position to consensus sequence
-				my @con_pos = $rep_str eq '+' ? ($rep->[11],$rep->[12],$rep->[13]) : ($rep->[13],$rep->[12],$rep->[11]);
-				# Color full length repeats in red
-				#if ($con_pos[0] == 1 && $con_pos[2] eq '(0)' && $rep_div < 3) { @rgb = (255,0,0); }
-				# Color repeat
-				$img->bgcolor(@rgb);
-				$img->fgcolor(@rgb);
-				$page1->setrgbcolor($rgb[0]/255,$rgb[1]/255,$rgb[2]/255);
-				# Draw repeat
-			    if ($rep_str eq '+') {
-			        $img->rectangle($l_space+$convx_a{$pid}{$rep_beg}, 10+70, $l_space+$convx_a{$pid}{$rep_end}, 24+70);
-			        $page1->rectangle(40+$convx_a{$pid}{$rep_beg}, 1650-(20+30+40), ($convx_a{$pid}{$rep_end}-$convx_a{$pid}{$rep_beg}+1), 15);
-			        $page1->fill();
-			    } elsif ($rep_str eq 'C') {
-			        $img->rectangle($l_space+$convx_a{$pid}{$rep_beg}, 26+70, $l_space+$convx_a{$pid}{$rep_end}, 40+70);
-					$page1->rectangle(40+$convx_a{$pid}{$rep_beg}, 1650-(35+30+40), ($convx_a{$pid}{$rep_end}-$convx_a{$pid}{$rep_beg}+1), 15);
-			        $page1->fill();
-			    }
-			}
-		}
-	}
-
-	# piRNA expression
-	my $max_rpm = 40;
-	# Y-axis line
-	$img->bgcolor('black');
-	$img->fgcolor('black');
-	$img->moveTo($l_space, 120);
-	$img->lineTo($l_space, 160);
-	# Y-axis labels
-	$img->fontsize(10);
-	$img->moveTo($l_space-15, 120+10);
-	$img->string("$max_rpm");
-	$img->moveTo($l_space-15, 161+2);
-	$img->string("$max_rpm");
-	# Y-axis line pdf
-	$page1->setrgbcolorstroke(0.1,0.1,0.1);
-	$page1->line(40, 1650-(20+30+40+50-20), 40, 1650-(20+30+40+50+20)-8);
-	$page1->line(37, 1650-(20+30+40+50-20), 40, 1650-(20+30+40+50-20));
-	$page1->line(37, 1650-(20+30+40+50+20)-8, 40, 1650-(20+30+40+50+20)-8);
-	# Y-axis labels pdf
-	$page1->setrgbcolor(0,0,0);
-	$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50-10), "$max_rpm");
-	$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50+25), "$max_rpm");
-	# Go through each bin on plus strand
-	foreach my $bin (sort {$a <=> $b} keys %{$pls_rds_s1}) {
-		# Get pic coordinates
-		my $bin_chr = $pls_rds_s1->{$bin}->[0];
-		my $bin_beg = $pls_rds_s1->{$bin}->[1];
-		my $bin_end = $pls_rds_s1->{$bin}->[2];
-		my $bin_rds = $pls_rds_s1->{$bin}->[3];
-		# Skip if not same contig
-		unless ($pic_chr eq $bin_chr) { next; }
-		# Check if reads bin is in region
-		if ($pic_loc{$pid}[3] < $bin_beg && $pic_loc{$pid}[6] > $bin_end) {
-			# Skip if in slice brake
-			unless ($convx_a{$pid}{$bin_beg} && $convx_a{$pid}{$bin_end}) { next; }
-			# Calculate rpm for bin
-			my $bin_rpm = (int($bin_rds/$global_rds1*1_000_000))/($max_rpm/20);
-			my $rpm_nrm = $bin_rpm <= 20 ? $bin_rpm : 20;
-			# Draw rpm
-			if ($rpm_nrm) {
-				# Color rpm
-				$img->bgcolor(255,148,0);
-				$img->fgcolor(255,148,0);
-				$img->rectangle($l_space+$convx_a{$pid}{$bin_beg}, 140-$rpm_nrm, $l_space+$convx_a{$pid}{$bin_end}, 140);
-				$page1->setrgbcolor(255/255,148/255,0/255);
-				$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50), ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), $rpm_nrm);
-				$page1->fill();
-			}
-			if ($bin_rpm > 20) {
-				# Color rpm
-				$img->bgcolor(255,0,0);
-				$img->fgcolor(255,0,0);
-				$img->rectangle($l_space+$convx_a{$pid}{$bin_beg}, 120, $l_space+$convx_a{$pid}{$bin_end}, 120);
-				$page1->setrgbcolor(255/255,0/255,0/255);
-				$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50)+20, ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), 1);
-				$page1->fill();
-			}
-		}
-	}
-	# Go through each bin on minus strand
-	foreach my $bin (sort {$a <=> $b} keys %{$mns_rds_s1}) {
-		# Get pic coordinates
-		my $bin_chr = $mns_rds_s1->{$bin}->[0];
-		my $bin_beg = $mns_rds_s1->{$bin}->[1];
-		my $bin_end = $mns_rds_s1->{$bin}->[2];
-		my $bin_rds = $mns_rds_s1->{$bin}->[3];
-		# Skip if not same contig
-		unless ($pic_chr eq $bin_chr) { next; }
-		# Check if reads bin is in region
-		if ($pic_loc{$pid}[3] < $bin_beg && $pic_loc{$pid}[6] > $bin_end) {
-			# Skip if in slice brake
-			unless ($convx_a{$pid}{$bin_beg} && $convx_a{$pid}{$bin_end}) { next; }
-			# Calculate rpm for bin
-			my $bin_rpm = (int($bin_rds/$global_rds1*1_000_000))/($max_rpm/20);
-			my $rpm_nrm = $bin_rpm <= 20 ? $bin_rpm : 20;
-			# Draw rpm
-			if ($rpm_nrm) {
-				# Color rpm
-				$img->bgcolor(255,192,0);
-				$img->fgcolor(255,192,0);
-				$img->rectangle($l_space+$convx_a{$pid}{$bin_beg}, 141, $l_space+$convx_a{$pid}{$bin_end}, 141+$rpm_nrm);
-				$page1->setrgbcolor(255/255,192/255,0/255);
-				$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50)-$rpm_nrm, ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), $rpm_nrm);
-				$page1->fill();
-			}
-			if ($bin_rpm > 20) {
-				# Color rpm
-				$img->bgcolor(255,0,0);
-				$img->fgcolor(255,0,0);
-				$img->rectangle($l_space+$convx_a{$pid}{$bin_beg}, 161, $l_space+$convx_a{$pid}{$bin_end}, 161);
-				$page1->setrgbcolor(255/255,0/255,0/255);
-				$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50)-20, ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), 1);
-				$page1->fill();
-			}
-		}
-	}
-
-	## Species 2 syntenic contig regions
-	# Number of contigs and their space in the image
-	my $chr_i = 0;
-	my $chr_n = keys %{$hom_reg{$pid}} <= 5 ? keys %{$hom_reg{$pid}} : 5;
-	my $chr_shift = $chr_n == 5 ? $height/$chr_n : $height/($chr_n+1);
-	# Output graphical representations for each syntenic contig
-	foreach my $chr (sort {$hom_reg{$pid}{$b}[2] <=> $hom_reg{$pid}{$a}[2]} keys %{$hom_reg{$pid}}) {
-		# Current contig number
-		$chr_i++;
-		if ($chr_i > 4) { last; }
+### Graphics Output ###
+# Ask if PDF::Create is installed
+if ($pdf_installed) {
+	# Create graphical output on synteny for each pic
+	foreach my $pid (sort keys %pic_loc) {
+		# Skip if no flank gene homologs on either side
+		unless ($ups_hcs{$pid} || $dos_hcs{$pid}) { next; }
+		my $pic_chr = $pic_loc{$pid}[0];
+		# Create pdf file
+		my $pdf = PDF::Create->new(
+		    'filename'     => "$gd_dir/$img_prefix.pic_$pid.pdf",
+		    'Author'       => 'Perl',
+		    'Title'        => "$img_prefix.pic_$pid.pdf",
+		    'CreationDate' => [ localtime ]
+		);
+		# Add a A4 sized page
+		my $root = $pdf->new_page('MediaBox' => $pdf->get_page_size('A2'));
+		# Add a page which inherits its attributes from $root
+		my $page1 = $root->new_page;
+		# Prepare a font
+		my $font = $pdf->font('BaseFont' => 'Helvetica');
+		# Specify height
+		my $height = 1000;
+		## Species 1 contig region
 		# Caption
-	    $img->bgcolor('black');
-	    $img->fgcolor('black');
-	    $img->moveTo($l_space, 20+($chr_shift*$chr_i)-20);
-	    $img->fontsize(10);
-		my $sp2_beg = add_thousands_separators($hom_reg{$pid}{$chr}[0]);
-		my $sp2_end = add_thousands_separators($hom_reg{$pid}{$chr}[1]);
-	    $img->string("$chr:$sp2_beg-$sp2_end");
-		# Caption pdf
-		$page1->setrgbcolor(0/255,0/255,0/255);
-	    $page1->string($font, 15, 40, 1650-20-($chr_shift*$chr_i), "$chr:$sp2_beg-$sp2_end");
+		my $sp1_chr = $pic_loc{$pid}[0];
+		my $sp1_beg = add_thousands_separators($pic_loc{$pid}[3]);
+		my $sp1_end = add_thousands_separators($pic_loc{$pid}[6]);
+		$page1->string($font, 15, 40, 1650-20, "$sp1_chr:$sp1_beg-$sp1_end");
 		# Scale
-		$scale_len = 100;
-		$img->moveTo(900+$l_space, 20+($chr_shift*$chr_i)-20);
-		$img->lineTo(900+$l_space+$scale_len, 20+($chr_shift*$chr_i)-20);
-		$img->moveTo(900+$l_space+(($scale_len/2)-10), 20+($chr_shift*$chr_i)-20);
-		$scale_bps = (($region_lens{$pid}{$chr}+1)/1000)*$scale_len;
-		$scale_kbs = int($scale_bps/1000);
-		$img->string("${scale_kbs}kb");
-		# Scale pdf
+		my $scale_len = 100;
+		my $scale_bps = (($pic_loc{$pid}[6]-$pic_loc{$pid}[3]+1)/1000)*$scale_len;
+		my $scale_kbs = int($scale_bps/1000);
 		$page1->setrgbcolorstroke(0.1,0.1,0.1);
-		$page1->line(900+40, 1650-20-($chr_shift*$chr_i), 900+40+$scale_len, 1650-20-($chr_shift*$chr_i));
-		$page1->stringc($font, 15, 900+$scale_len-10, 1650-16-($chr_shift*$chr_i), "${scale_kbs}kb");
-		# Contig region
-	    $img->bgcolor(255,255,255);
-	    $img->fgcolor('black');
-	    $img->rectangle($l_space, 10+($chr_shift*$chr_i), 1000+$l_space, 40+($chr_shift*$chr_i));
-		# Y-axis labels
-		$img->fontsize(10);
-		$img->moveTo($l_space-10, 10+($chr_shift*$chr_i)+10);
-		$img->string("+");
-		$img->moveTo($l_space-10, 40+($chr_shift*$chr_i)+2);
-		$img->string("-");
+		$page1->line(900+40, 1650-20, 900+40+$scale_len, 1650-20);
+		$page1->stringc($font, 15, 900+$scale_len-10, 1650-16, "${scale_kbs}kb");
+		# piC loc
+		$page1->setrgbcolorstroke(0.6,0.6,0.6);
+		$page1->line(40+$convx_a{$pid}{$pic_loc{$pid}[1]}, 1650-(20)-8, 40+$convx_a{$pid}{$pic_loc{$pid}[2]}, 1650-(20)-8);
+		$page1->line(40+$convx_a{$pid}{$pic_loc{$pid}[1]}, 1650-(20)-8, 40+$convx_a{$pid}{$pic_loc{$pid}[1]}, 1650-(3+20)-8);
+		$page1->line(40+$convx_a{$pid}{$pic_loc{$pid}[2]}, 1650-(20)-8, 40+$convx_a{$pid}{$pic_loc{$pid}[2]}, 1650-(3+20)-8);
+
 		# Positions of other genes in region
-		foreach my $gen (sort {$syn_gns{$pid}{$chr}{$a}[0] <=> $syn_gns{$pid}{$chr}{$b}[0]} keys %{$syn_gns{$pid}{$chr}}) {
-			my $g_beg = $syn_gns{$pid}{$chr}{$gen}[0];
-			my $g_end = $syn_gns{$pid}{$chr}{$gen}[1];
-			my $g_str = $syn_gns{$pid}{$chr}{$gen}[2];
-			unless ($convx_b{$pid}{$chr}{$g_beg} && $convx_b{$pid}{$chr}{$g_end}) { next; }
-			# Check overlap with flank genes
-			my $overlap = 0;
-			foreach my $g (@{$ups_hcs{$pid}}) {
-				if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
-					$overlap = 1;
+		foreach my $i (0..1) {
+		    # Sort genes by position on contig
+		    my @genes_os1 = sort {$gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$a}->[0] <=> $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$b}->[0]} keys %{$gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}};
+		    # Go through each flanking gene on contig and search ortholog sequences in new assembly
+		    foreach my $gene (@genes_os1) {
+		        # Get gene coordinates
+		        my $g_beg = $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$gene}->[0];
+		        my $g_end = $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$gene}->[1];
+		        my $g_str = $gen_locs_s1_new->{$pid}->[$i]->{$pic_chr}->{$gene}->[2] eq 'plus' ? '+' : '-';
+				# Check overlap with flank genes
+				my $overlap = 0;
+				foreach my $g (@{$ups_gcs{$pid}}) {
+					if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
+						$overlap = 1;
+					}
 				}
-			}
-			foreach my $g (@{$dos_hcs{$pid}}) {
-				if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
-					$overlap = 1;
+				foreach my $g (@{$dos_gcs{$pid}}) {
+					if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
+						$overlap = 1;
+					}
 				}
-			}
-			# Skip if overlaps found
-			if ($overlap) { next; }
-			unless ($convx_b{$pid}{$chr}{$g_beg} && $convx_b{$pid}{$chr}{$g_end}) { next; }
-			$img->bgcolor(210,210,210);
-	        $img->fgcolor(210,210,210);
-			if ($convx_b{$pid}{$chr}{$g_end}-$convx_b{$pid}{$chr}{$g_beg} <= 1) { $img->fgcolor(210,210,210); }
-	        if ($g_str eq '+') {
-	            $img->rectangle($l_space+$convx_b{$pid}{$chr}{$g_beg}, 10+($chr_shift*$chr_i), $l_space+$convx_b{$pid}{$chr}{$g_end}, 24+($chr_shift*$chr_i));
-				$page1->setrgbcolor(240/255,240/255,240/255);
-	            $page1->rectangle(40+$convx_b{$pid}{$chr}{$g_beg}, 1650-(20+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$g_end}-$convx_b{$pid}{$chr}{$g_beg}+1), 15);
-	            $page1->fill();
-	        } elsif ($g_str eq '-') {
-	            $img->rectangle($l_space+$convx_b{$pid}{$chr}{$g_beg}, 26+($chr_shift*$chr_i), $l_space+$convx_b{$pid}{$chr}{$g_end}, 40+($chr_shift*$chr_i));
-				$page1->setrgbcolor(240/255,240/255,240/255);
-	            $page1->rectangle(40+$convx_b{$pid}{$chr}{$g_beg}, 1650-(35+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$g_end}-$convx_b{$pid}{$chr}{$g_beg}+1), 15);
-	            $page1->fill();
-	        }
-	    }
-		# Upstream orthologous flank genes in green
-	    foreach my $gen (@{$ups_hcs{$pid}}) {
-	        unless ($gen->[0] eq $chr) { next; }
-			$img->bgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-	        $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-			$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
-			if ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]} <= 1) { $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}}); }
-	        if ($gen->[3] eq '+') {
-	            $img->rectangle($l_space+$convx_b{$pid}{$chr}{$gen->[1]}, 10+($chr_shift*$chr_i), $l_space+$convx_b{$pid}{$chr}{$gen->[2]}, 24+($chr_shift*$chr_i));
-	            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(20+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
-	            $page1->fill();
-	        } elsif ($gen->[3] eq '-') {
-	            $img->rectangle($l_space+$convx_b{$pid}{$chr}{$gen->[1]}, 26+($chr_shift*$chr_i), $l_space+$convx_b{$pid}{$chr}{$gen->[2]}, 40+($chr_shift*$chr_i));
-	            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(35+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
-	            $page1->fill();
-	        }
-	    }
-		# Downstream orthologous flank genes in blue
-	    foreach my $gen (@{$dos_hcs{$pid}}) {
-	        unless ($gen->[0] eq $chr) { next; }
-			$img->bgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-	        $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}});
-			$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
-			if ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]} <= 1) { $img->fgcolor(@{$gen_cols{$pid}{$gen->[4]}}); }
-	        if ($gen->[3] eq '+') {
-	            $img->rectangle($l_space+$convx_b{$pid}{$chr}{$gen->[1]}, 10+($chr_shift*$chr_i), $l_space+$convx_b{$pid}{$chr}{$gen->[2]}, 24+($chr_shift*$chr_i));
-	            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(20+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
-	            $page1->fill();
-	        } elsif ($gen->[3] eq '-') {
-	            $img->rectangle($l_space+$convx_b{$pid}{$chr}{$gen->[1]}, 26+($chr_shift*$chr_i), $l_space+$convx_b{$pid}{$chr}{$gen->[2]}, 40+($chr_shift*$chr_i));
-	            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(35+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
-	            $page1->fill();
-	        }
-	    }
-		# pdf contig rectangle
-		$page1->setrgbcolorstroke(0.1,0.1,0.1);
-	    $page1->rectangle(40,1650-65-($chr_shift*$chr_i),1000,30);
-	    $page1->stroke();
-
-		# Putative homologous pic locus
-		my $hom_chr = $hom_pic_locs{$pid}[0];
-		my $hom_beg = $hom_pic_locs{$pid}[1] eq 'NA' ? $hom_reg{$pid}{$chr}[0] : $hom_pic_locs{$pid}[1];
-		my $hom_end = $hom_pic_locs{$pid}[2] eq 'NA' ? $hom_reg{$pid}{$chr}[1] : $hom_pic_locs{$pid}[2];
-		if ($hom_chr eq $chr) {
-			$img->bgcolor('gray');
-	        $img->fgcolor('gray');
-			# Horizontal line
-			$img->moveTo($l_space+$convx_b{$pid}{$chr}{$hom_beg}, 20+($chr_shift*$chr_i)-15);
-			$img->lineTo($l_space+$convx_b{$pid}{$chr}{$hom_end}, 20+($chr_shift*$chr_i)-15);
-			# Vertical line
-			$img->moveTo($l_space+$convx_b{$pid}{$chr}{$hom_beg}, 20+($chr_shift*$chr_i)-15);
-			$img->lineTo($l_space+$convx_b{$pid}{$chr}{$hom_beg}, 20+($chr_shift*$chr_i)-13);
-			# Vertical line
-			$img->moveTo($l_space+$convx_b{$pid}{$chr}{$hom_end}, 20+($chr_shift*$chr_i)-15);
-			$img->lineTo($l_space+$convx_b{$pid}{$chr}{$hom_end}, 20+($chr_shift*$chr_i)-13);
-			# pdf
-			$page1->setrgbcolorstroke(0.6,0.6,0.6);
-			$page1->line(40+$convx_b{$pid}{$chr}{$hom_beg}, 1650-(20)-($chr_shift*$chr_i)-8, 40+$convx_b{$pid}{$chr}{$hom_end}, 1650-(20)-($chr_shift*$chr_i)-8);
-			$page1->line(40+$convx_b{$pid}{$chr}{$hom_beg}, 1650-(20)-($chr_shift*$chr_i)-8, 40+$convx_b{$pid}{$chr}{$hom_beg}, 1650-(3+20)-($chr_shift*$chr_i)-8);
-			$page1->line(40+$convx_b{$pid}{$chr}{$hom_end}, 1650-(20)-($chr_shift*$chr_i)-8, 40+$convx_b{$pid}{$chr}{$hom_end}, 1650-(3+20)-($chr_shift*$chr_i)-8);
+				# Skip if overlaps found
+				if ($overlap) { next; }
+		        if ($g_str eq '+') {
+					$page1->setrgbcolor(240/255,240/255,240/255);
+			        $page1->rectangle(40+$convx_a{$pid}{$g_beg}, 1650-(20+30), ($convx_a{$pid}{$g_end}-$convx_a{$pid}{$g_beg}+1), 15);
+			        $page1->fill();
+		        } elsif ($g_str eq '-') {
+					$page1->setrgbcolor(240/255,240/255,240/255);
+			        $page1->rectangle(40+$convx_a{$pid}{$g_beg}, 1650-(35+30), ($convx_a{$pid}{$g_end}-$convx_a{$pid}{$g_beg}+1), 15);
+			        $page1->fill();
+		        }
+		    }
 		}
-
-		# Breakpoints
-		#foreach my $br_pair (@{$break_pos_sp2{$pid}{$chr}}) {
-		#	foreach my $br (@{$br_pair}) {
-		#		$img->bgcolor('red');
-		#        $img->fgcolor('red');
-		#        $img->rectangle(10+$convx_b{$pid}{$chr}{$br}, 10+($chr_shift*$chr_i)-5, 10+$convx_b{$pid}{$chr}{$br}, 24+($chr_shift*$chr_i)-15);
-		#	}
-		#}
-
-		# Contig region
-	    $img->bgcolor(undef);
-	    $img->fgcolor('black');
-	    $img->rectangle($l_space, 10+($chr_shift*$chr_i), 1000+$l_space, 40+($chr_shift*$chr_i));
+		# Positions of upstream flank genes
+		foreach my $gen (@{$ups_gcs{$pid}}) {
+			$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
+		    if ($gen->[3] eq '+') {
+		        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(20+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
+		        $page1->fill();
+		    } elsif ($gen->[3] eq '-') {
+		        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(35+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
+		        $page1->fill();
+		    }
+		}
+		# Positions of downstream flank genes
+		foreach my $gen (@{$dos_gcs{$pid}}) {
+			$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
+		    if ($gen->[3] eq '+') {
+		        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(20+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
+		        $page1->fill();
+		    } elsif ($gen->[3] eq '-') {
+		        $page1->rectangle(40+$convx_a{$pid}{$gen->[1]}, 1650-(35+30), ($convx_a{$pid}{$gen->[2]}-$convx_a{$pid}{$gen->[1]}+1), 15);
+		        $page1->fill();
+		    }
+		}
+		# Contig rectangle
+		$page1->setrgbcolorstroke(0.1,0.1,0.1);
+		$page1->rectangle(40,1650-65,1000,30);
+		$page1->stroke();
 		# Repeat annotation
-		# Y-axis line
-		$img->moveTo($l_space, 10+($chr_shift*$chr_i)+40);
-		$img->lineTo($l_space, 40+($chr_shift*$chr_i)+40);
-		# Y-axis labels
-		$img->fontsize(10);
-		$img->moveTo($l_space-10, 10+($chr_shift*$chr_i)+40+10);
-		$img->string("+");
-		$img->moveTo($l_space-10, 40+($chr_shift*$chr_i)+40+2);
-		$img->string("-");
-		if ($spec2_rmout_file) {
+		if ($spec1_rmout_file) {
 			# Repeat positions
-			foreach my $rep (@{$rep_data_s2->{$chr}}) {
+			foreach my $rep (@{$rep_data_s1->{$pic_loc{$pid}[0]}}) {
 				# Repeat coordinates
 				my $rep_beg = $rep->[5];
 				my $rep_end = $rep->[6];
 				my $rep_str = $rep->[8];
 				my $rep_div = $rep->[1];
 				# Check if repeat is in region
-				if ($hom_reg{$pid}{$chr}[0] < $rep_beg && $hom_reg{$pid}{$chr}[1] > $rep_end) {
-					unless ($convx_b{$pid}{$chr}{$rep_beg} && $convx_b{$pid}{$chr}{$rep_end}) { next; }
+				if ($pic_loc{$pid}[3] < $rep_beg && $pic_loc{$pid}[6] > $rep_end) {
 					# Calculate gray shade according to sequence divergence
 					my @rgb = (255*($rep_div/40),255*($rep_div/40),255*($rep_div/40));
 					# Get repeat position to consensus sequence
 					my @con_pos = $rep_str eq '+' ? ($rep->[11],$rep->[12],$rep->[13]) : ($rep->[13],$rep->[12],$rep->[11]);
-					# Color full length repeats in red
-					#if ($con_pos[0] == 1 && $con_pos[2] eq '(0)' && $rep_div < 3) { @rgb = (255,0,0); }
 					# Color repeat
-					$img->bgcolor(@rgb);
-				    $img->fgcolor(@rgb);
 					$page1->setrgbcolor($rgb[0]/255,$rgb[1]/255,$rgb[2]/255);
 					# Draw repeat
 				    if ($rep_str eq '+') {
-				        $img->rectangle($l_space+$convx_b{$pid}{$chr}{$rep_beg}, 10+($chr_shift*$chr_i)+40, $l_space+$convx_b{$pid}{$chr}{$rep_end}, 24+($chr_shift*$chr_i)+40);
-			            $page1->rectangle(40+$convx_b{$pid}{$chr}{$rep_beg}, 1650-(20+30+40)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$rep_end}-$convx_b{$pid}{$chr}{$rep_beg}+1), 15);
-			            $page1->fill();
+				        $page1->rectangle(40+$convx_a{$pid}{$rep_beg}, 1650-(20+30+40), ($convx_a{$pid}{$rep_end}-$convx_a{$pid}{$rep_beg}+1), 15);
+				        $page1->fill();
 				    } elsif ($rep_str eq 'C') {
-				        $img->rectangle($l_space+$convx_b{$pid}{$chr}{$rep_beg}, 26+($chr_shift*$chr_i)+40, $l_space+$convx_b{$pid}{$chr}{$rep_end}, 40+($chr_shift*$chr_i)+40);
-						$page1->rectangle(40+$convx_b{$pid}{$chr}{$rep_beg}, 1650-(35+30+40)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$rep_end}-$convx_b{$pid}{$chr}{$rep_beg}+1), 15);
-			            $page1->fill();
+						$page1->rectangle(40+$convx_a{$pid}{$rep_beg}, 1650-(35+30+40), ($convx_a{$pid}{$rep_end}-$convx_a{$pid}{$rep_beg}+1), 15);
+				        $page1->fill();
 				    }
 				}
 			}
 		}
 
 		# piRNA expression
+		my $max_rpm = 40;
 		# Y-axis line
-		$img->bgcolor('black');
-		$img->fgcolor('black');
-		$img->moveTo($l_space, 50+($chr_shift*$chr_i)+40);
-		$img->lineTo($l_space, 50+($chr_shift*$chr_i)+80);
-		# Y-axis labels
-		$img->fontsize(10);
-		$img->moveTo($l_space-15, 50+($chr_shift*$chr_i)+40+10);
-		$img->string("$max_rpm");
-		$img->moveTo($l_space-15, 50+($chr_shift*$chr_i)+81+2);
-		$img->string("$max_rpm");
-		# Y-axis line pdf
 		$page1->setrgbcolorstroke(0.1,0.1,0.1);
-		$page1->line(40, 1650-(20+30+40+50-20)-($chr_shift*$chr_i), 40, 1650-(20+30+40+50+20)-($chr_shift*$chr_i)-8);
-		$page1->line(37, 1650-(20+30+40+50-20)-($chr_shift*$chr_i), 40, 1650-(20+30+40+50-20)-($chr_shift*$chr_i));
-		$page1->line(37, 1650-(20+30+40+50+20)-($chr_shift*$chr_i)-8, 40, 1650-(20+30+40+50+20)-($chr_shift*$chr_i)-8);
-		# Y-axis labels pdf
+		$page1->line(40, 1650-(20+30+40+50-20), 40, 1650-(20+30+40+50+20)-8);
+		$page1->line(37, 1650-(20+30+40+50-20), 40, 1650-(20+30+40+50-20));
+		$page1->line(37, 1650-(20+30+40+50+20)-8, 40, 1650-(20+30+40+50+20)-8);
+		# Y-axis labels
 		$page1->setrgbcolor(0,0,0);
-		$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50-10)-($chr_shift*$chr_i), "$max_rpm");
-		$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50+25)-($chr_shift*$chr_i), "$max_rpm");
+		$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50-10), "$max_rpm");
+		$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50+25), "$max_rpm");
 		# Go through each bin on plus strand
-		foreach my $bin (sort {$a <=> $b} keys %{$pls_rds_s2}) {
+		foreach my $bin (sort {$a <=> $b} keys %{$pls_rds_s1}) {
 			# Get pic coordinates
-			my $bin_chr = $pls_rds_s2->{$bin}->[0];
-			my $bin_beg = $pls_rds_s2->{$bin}->[1];
-			my $bin_end = $pls_rds_s2->{$bin}->[2];
-			my $bin_rds = $pls_rds_s2->{$bin}->[3];
+			my $bin_chr = $pls_rds_s1->{$bin}->[0];
+			my $bin_beg = $pls_rds_s1->{$bin}->[1];
+			my $bin_end = $pls_rds_s1->{$bin}->[2];
+			my $bin_rds = $pls_rds_s1->{$bin}->[3];
 			# Skip if not same contig
-			unless ($chr eq $bin_chr) { next; }
+			unless ($pic_chr eq $bin_chr) { next; }
 			# Check if reads bin is in region
-			if ($hom_reg{$pid}{$chr}[0] < $bin_beg && $hom_reg{$pid}{$chr}[1] > $bin_end) {
+			if ($pic_loc{$pid}[3] < $bin_beg && $pic_loc{$pid}[6] > $bin_end) {
 				# Skip if in slice brake
-				unless ($convx_b{$pid}{$chr}{$bin_beg} && $convx_b{$pid}{$chr}{$bin_end}) { next; }
+				unless ($convx_a{$pid}{$bin_beg} && $convx_a{$pid}{$bin_end}) { next; }
 				# Calculate rpm for bin
-				my $bin_rpm = (int($bin_rds/$global_rds2*1_000_000))/($max_rpm/20);
+				my $bin_rpm = (int($bin_rds/$global_rds1*1_000_000))/($max_rpm/20);
 				my $rpm_nrm = $bin_rpm <= 20 ? $bin_rpm : 20;
 				# Draw rpm
 				if ($rpm_nrm) {
 					# Color rpm
-					$img->bgcolor(255,148,0);
-					$img->fgcolor(255,148,0);
-					$img->rectangle($l_space+$convx_b{$pid}{$chr}{$bin_beg}, 50+($chr_shift*$chr_i)+60-$rpm_nrm, $l_space+$convx_b{$pid}{$chr}{$bin_end}, 50+($chr_shift*$chr_i)+60);
 					$page1->setrgbcolor(255/255,148/255,0/255);
-					$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), $rpm_nrm);
+					$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50), ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), $rpm_nrm);
 					$page1->fill();
 				}
 				if ($bin_rpm > 20) {
 					# Color rpm
-					$img->bgcolor(255,0,0);
-					$img->fgcolor(255,0,0);
-					$img->rectangle($l_space+$convx_b{$pid}{$chr}{$bin_beg}, 50+($chr_shift*$chr_i)+40, $l_space+$convx_b{$pid}{$chr}{$bin_end}, 50+($chr_shift*$chr_i)+40);
 					$page1->setrgbcolor(255/255,0/255,0/255);
-					$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)+20-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), 1);
+					$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50)+20, ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), 1);
 					$page1->fill();
 				}
 			}
 		}
 		# Go through each bin on minus strand
-		foreach my $bin (sort {$a <=> $b} keys %{$mns_rds_s2}) {
+		foreach my $bin (sort {$a <=> $b} keys %{$mns_rds_s1}) {
 			# Get pic coordinates
-			my $bin_chr = $mns_rds_s2->{$bin}->[0];
-			my $bin_beg = $mns_rds_s2->{$bin}->[1];
-			my $bin_end = $mns_rds_s2->{$bin}->[2];
-			my $bin_rds = $mns_rds_s2->{$bin}->[3];
+			my $bin_chr = $mns_rds_s1->{$bin}->[0];
+			my $bin_beg = $mns_rds_s1->{$bin}->[1];
+			my $bin_end = $mns_rds_s1->{$bin}->[2];
+			my $bin_rds = $mns_rds_s1->{$bin}->[3];
 			# Skip if not same contig
-			unless ($chr eq $bin_chr) { next; }
+			unless ($pic_chr eq $bin_chr) { next; }
 			# Check if reads bin is in region
-			if ($hom_reg{$pid}{$chr}[0] < $bin_beg && $hom_reg{$pid}{$chr}[1] > $bin_end) {
+			if ($pic_loc{$pid}[3] < $bin_beg && $pic_loc{$pid}[6] > $bin_end) {
 				# Skip if in slice brake
-				unless ($convx_b{$pid}{$chr}{$bin_beg} && $convx_b{$pid}{$chr}{$bin_end}) { next; }
+				unless ($convx_a{$pid}{$bin_beg} && $convx_a{$pid}{$bin_end}) { next; }
 				# Calculate rpm for bin
-				my $bin_rpm = (int($bin_rds/$global_rds2*1_000_000))/($max_rpm/20);
+				my $bin_rpm = (int($bin_rds/$global_rds1*1_000_000))/($max_rpm/20);
 				my $rpm_nrm = $bin_rpm <= 20 ? $bin_rpm : 20;
 				# Draw rpm
 				if ($rpm_nrm) {
 					# Color rpm
-					$img->bgcolor(255,192,0);
-					$img->fgcolor(255,192,0);
-					$img->rectangle($l_space+$convx_b{$pid}{$chr}{$bin_beg}, 50+($chr_shift*$chr_i)+61, $l_space+$convx_b{$pid}{$chr}{$bin_end}, 50+($chr_shift*$chr_i)+61+$rpm_nrm);
 					$page1->setrgbcolor(255/255,192/255,0/255);
-					$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)-($chr_shift*$chr_i)-$rpm_nrm, ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), $rpm_nrm);
+					$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50)-$rpm_nrm, ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), $rpm_nrm);
 					$page1->fill();
 				}
 				if ($bin_rpm > 20) {
 					# Color rpm
-					$img->bgcolor(255,0,0);
-					$img->fgcolor(255,0,0);
-					$img->rectangle($l_space+$convx_b{$pid}{$chr}{$bin_beg}, 50+($chr_shift*$chr_i)+81, $l_space+$convx_b{$pid}{$chr}{$bin_end}, 50+($chr_shift*$chr_i)+81);
 					$page1->setrgbcolor(255/255,0/255,0/255);
-					$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)-20-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), 1);
+					$page1->rectangle(40+$convx_a{$pid}{$bin_beg}, 1650-(20+30+40+50)-20, ($convx_a{$pid}{$bin_end}-$convx_a{$pid}{$bin_beg}+1), 1);
 					$page1->fill();
 				}
 			}
 		}
 
-		# Insert positions of slice breaks
-		foreach my $slice (sort {$a <=> $b} keys %{$slices{$pid}{$chr}}) {
-			if ($slice == 1) { next; }
-			# White color for slice point rectangle
-			$img->bgcolor(255,255,255);
-			$img->fgcolor(255,255,255);
-			# Get slice point coordinate
-			my $slice_pt = $slices{$pid}{$chr}{$slice}[0];
-			my $sgap_len = int(($slices{$pid}{$chr}{$slice}[0]-$slices{$pid}{$chr}{$slice-1}[1]+500)/1000);
-			# Draw white rectangle around slice point coordinate
-			$img->rectangle($l_space+$convx_b{$pid}{$chr}{$slice_pt}-5, 5+($chr_shift*$chr_i), $l_space+$convx_b{$pid}{$chr}{$slice_pt}+5, 50+($chr_shift*$chr_i)+80);
-			# Black slice point lines
-			$img->bgcolor(0,0,0);
-			$img->fgcolor(0,0,0);
-			# Left slice point line
-			$img->moveTo($l_space+$convx_b{$pid}{$chr}{$slice_pt}-5, 5+($chr_shift*$chr_i));
-			$img->lineTo($l_space+$convx_b{$pid}{$chr}{$slice_pt}-5, 45+($chr_shift*$chr_i));
-			# Right slice point line
-			$img->moveTo($l_space+$convx_b{$pid}{$chr}{$slice_pt}+5, 5+($chr_shift*$chr_i));
-			$img->lineTo($l_space+$convx_b{$pid}{$chr}{$slice_pt}+5, 45+($chr_shift*$chr_i));
-			# Gap length label
-			$img->fontsize(10);
-			$img->moveTo($l_space+$convx_b{$pid}{$chr}{$slice_pt}-15, 5+($chr_shift*$chr_i));
-			$img->string("${sgap_len}kb");
+		## Species 2 syntenic contig regions
+		# Number of contigs and their space in the image
+		my $chr_i = 0;
+		my $chr_n = keys %{$hom_reg{$pid}} <= 5 ? keys %{$hom_reg{$pid}} : 5;
+		my $chr_shift = $chr_n == 5 ? $height/$chr_n : $height/($chr_n+1);
+		# Output graphical representations for each syntenic contig
+		foreach my $chr (sort {$hom_reg{$pid}{$b}[2] <=> $hom_reg{$pid}{$a}[2]} keys %{$hom_reg{$pid}}) {
+			# Current contig number
+			$chr_i++;
+			if ($chr_i > 4) { last; }
+			# Caption
+			my $sp2_beg = add_thousands_separators($hom_reg{$pid}{$chr}[0]);
+			my $sp2_end = add_thousands_separators($hom_reg{$pid}{$chr}[1]);
+			$page1->setrgbcolor(0/255,0/255,0/255);
+		    $page1->string($font, 15, 40, 1650-20-($chr_shift*$chr_i), "$chr:$sp2_beg-$sp2_end");
+			# Scale
+			$scale_len = 100;
+			$scale_bps = (($region_lens{$pid}{$chr}+1)/1000)*$scale_len;
+			$scale_kbs = int($scale_bps/1000);
+			$page1->setrgbcolorstroke(0.1,0.1,0.1);
+			$page1->line(900+40, 1650-20-($chr_shift*$chr_i), 900+40+$scale_len, 1650-20-($chr_shift*$chr_i));
+			$page1->stringc($font, 15, 900+$scale_len-10, 1650-16-($chr_shift*$chr_i), "${scale_kbs}kb");
+			# Positions of other genes in region
+			foreach my $gen (sort {$syn_gns{$pid}{$chr}{$a}[0] <=> $syn_gns{$pid}{$chr}{$b}[0]} keys %{$syn_gns{$pid}{$chr}}) {
+				my $g_beg = $syn_gns{$pid}{$chr}{$gen}[0];
+				my $g_end = $syn_gns{$pid}{$chr}{$gen}[1];
+				my $g_str = $syn_gns{$pid}{$chr}{$gen}[2];
+				unless ($convx_b{$pid}{$chr}{$g_beg} && $convx_b{$pid}{$chr}{$g_end}) { next; }
+				# Check overlap with flank genes
+				my $overlap = 0;
+				foreach my $g (@{$ups_hcs{$pid}}) {
+					if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
+						$overlap = 1;
+					}
+				}
+				foreach my $g (@{$dos_hcs{$pid}}) {
+					if ($g_str eq $g->[3] && $g->[1] < $g_end && $g->[2] > $g_beg) {
+						$overlap = 1;
+					}
+				}
+				# Skip if overlaps found
+				if ($overlap) { next; }
+				unless ($convx_b{$pid}{$chr}{$g_beg} && $convx_b{$pid}{$chr}{$g_end}) { next; }
+		        if ($g_str eq '+') {
+					$page1->setrgbcolor(240/255,240/255,240/255);
+		            $page1->rectangle(40+$convx_b{$pid}{$chr}{$g_beg}, 1650-(20+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$g_end}-$convx_b{$pid}{$chr}{$g_beg}+1), 15);
+		            $page1->fill();
+		        } elsif ($g_str eq '-') {
+					$page1->setrgbcolor(240/255,240/255,240/255);
+		            $page1->rectangle(40+$convx_b{$pid}{$chr}{$g_beg}, 1650-(35+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$g_end}-$convx_b{$pid}{$chr}{$g_beg}+1), 15);
+		            $page1->fill();
+		        }
+		    }
+			# Upstream orthologous flank genes in green
+		    foreach my $gen (@{$ups_hcs{$pid}}) {
+		        unless ($gen->[0] eq $chr) { next; }
+				$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
+		        if ($gen->[3] eq '+') {
+		            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(20+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
+		            $page1->fill();
+		        } elsif ($gen->[3] eq '-') {
+		            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(35+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
+		            $page1->fill();
+		        }
+		    }
+			# Downstream orthologous flank genes in blue
+		    foreach my $gen (@{$dos_hcs{$pid}}) {
+		        unless ($gen->[0] eq $chr) { next; }
+				$page1->setrgbcolor($gen_cols{$pid}{$gen->[4]}->[0]/255,$gen_cols{$pid}{$gen->[4]}->[1]/255,$gen_cols{$pid}{$gen->[4]}->[2]/255);
+		        if ($gen->[3] eq '+') {
+		            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(20+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
+		            $page1->fill();
+		        } elsif ($gen->[3] eq '-') {
+		            $page1->rectangle(40+$convx_b{$pid}{$chr}{$gen->[1]}, 1650-(35+30)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$gen->[2]}-$convx_b{$pid}{$chr}{$gen->[1]}+1), 15);
+		            $page1->fill();
+		        }
+		    }
+			# pdf contig rectangle
+			$page1->setrgbcolorstroke(0.1,0.1,0.1);
+		    $page1->rectangle(40,1650-65-($chr_shift*$chr_i),1000,30);
+		    $page1->stroke();
 
-			# Draw white rectangle around slice point coordinate pdf
-			$page1->setrgbcolor(1,1,1);
-			$page1->setrgbcolorstroke(0,1,0);
-			$page1->rectangle(40+$convx_b{$pid}{$chr}{$slice_pt}-5, 1650-69-($chr_shift*$chr_i), 10, 40);
-			$page1->fill();
-			# Black slice point lines pdf
+			# Putative homologous pic locus
+			my $hom_chr = $hom_pic_locs{$pid}[0];
+			my $hom_beg = $hom_pic_locs{$pid}[1] eq 'NA' ? $hom_reg{$pid}{$chr}[0] : $hom_pic_locs{$pid}[1];
+			my $hom_end = $hom_pic_locs{$pid}[2] eq 'NA' ? $hom_reg{$pid}{$chr}[1] : $hom_pic_locs{$pid}[2];
+			if ($hom_chr eq $chr) {
+				$page1->setrgbcolorstroke(0.6,0.6,0.6);
+				$page1->line(40+$convx_b{$pid}{$chr}{$hom_beg}, 1650-(20)-($chr_shift*$chr_i)-8, 40+$convx_b{$pid}{$chr}{$hom_end}, 1650-(20)-($chr_shift*$chr_i)-8);
+				$page1->line(40+$convx_b{$pid}{$chr}{$hom_beg}, 1650-(20)-($chr_shift*$chr_i)-8, 40+$convx_b{$pid}{$chr}{$hom_beg}, 1650-(3+20)-($chr_shift*$chr_i)-8);
+				$page1->line(40+$convx_b{$pid}{$chr}{$hom_end}, 1650-(20)-($chr_shift*$chr_i)-8, 40+$convx_b{$pid}{$chr}{$hom_end}, 1650-(3+20)-($chr_shift*$chr_i)-8);
+			}
+			# Repeat annotation
+			if ($spec2_rmout_file) {
+				# Repeat positions
+				foreach my $rep (@{$rep_data_s2->{$chr}}) {
+					# Repeat coordinates
+					my $rep_beg = $rep->[5];
+					my $rep_end = $rep->[6];
+					my $rep_str = $rep->[8];
+					my $rep_div = $rep->[1];
+					# Check if repeat is in region
+					if ($hom_reg{$pid}{$chr}[0] < $rep_beg && $hom_reg{$pid}{$chr}[1] > $rep_end) {
+						unless ($convx_b{$pid}{$chr}{$rep_beg} && $convx_b{$pid}{$chr}{$rep_end}) { next; }
+						# Calculate gray shade according to sequence divergence
+						my @rgb = (255*($rep_div/40),255*($rep_div/40),255*($rep_div/40));
+						# Get repeat position to consensus sequence
+						my @con_pos = $rep_str eq '+' ? ($rep->[11],$rep->[12],$rep->[13]) : ($rep->[13],$rep->[12],$rep->[11]);
+						# Color repeat
+						$page1->setrgbcolor($rgb[0]/255,$rgb[1]/255,$rgb[2]/255);
+						# Draw repeat
+					    if ($rep_str eq '+') {
+				            $page1->rectangle(40+$convx_b{$pid}{$chr}{$rep_beg}, 1650-(20+30+40)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$rep_end}-$convx_b{$pid}{$chr}{$rep_beg}+1), 15);
+				            $page1->fill();
+					    } elsif ($rep_str eq 'C') {
+							$page1->rectangle(40+$convx_b{$pid}{$chr}{$rep_beg}, 1650-(35+30+40)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$rep_end}-$convx_b{$pid}{$chr}{$rep_beg}+1), 15);
+				            $page1->fill();
+					    }
+					}
+				}
+			}
+
+			# piRNA expression
+			# Y-axis line
+			$page1->setrgbcolorstroke(0.1,0.1,0.1);
+			$page1->line(40, 1650-(20+30+40+50-20)-($chr_shift*$chr_i), 40, 1650-(20+30+40+50+20)-($chr_shift*$chr_i)-8);
+			$page1->line(37, 1650-(20+30+40+50-20)-($chr_shift*$chr_i), 40, 1650-(20+30+40+50-20)-($chr_shift*$chr_i));
+			$page1->line(37, 1650-(20+30+40+50+20)-($chr_shift*$chr_i)-8, 40, 1650-(20+30+40+50+20)-($chr_shift*$chr_i)-8);
+			# Y-axis labels
 			$page1->setrgbcolor(0,0,0);
-			$page1->setrgbcolorstroke(0,0,0);
-			$page1->line(40+$convx_b{$pid}{$chr}{$slice_pt}-5, 1650-29-($chr_shift*$chr_i), 40+$convx_b{$pid}{$chr}{$slice_pt}-5, 1650-29-($chr_shift*$chr_i)-41);
-			$page1->line(40+$convx_b{$pid}{$chr}{$slice_pt}+5, 1650-29-($chr_shift*$chr_i), 40+$convx_b{$pid}{$chr}{$slice_pt}+5, 1650-29-($chr_shift*$chr_i)-41);
+			$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50-10)-($chr_shift*$chr_i), "$max_rpm");
+			$page1->stringc($font, 15, 40-15, 1650-(20+30+40+50+25)-($chr_shift*$chr_i), "$max_rpm");
+			# Go through each bin on plus strand
+			foreach my $bin (sort {$a <=> $b} keys %{$pls_rds_s2}) {
+				# Get pic coordinates
+				my $bin_chr = $pls_rds_s2->{$bin}->[0];
+				my $bin_beg = $pls_rds_s2->{$bin}->[1];
+				my $bin_end = $pls_rds_s2->{$bin}->[2];
+				my $bin_rds = $pls_rds_s2->{$bin}->[3];
+				# Skip if not same contig
+				unless ($chr eq $bin_chr) { next; }
+				# Check if reads bin is in region
+				if ($hom_reg{$pid}{$chr}[0] < $bin_beg && $hom_reg{$pid}{$chr}[1] > $bin_end) {
+					# Skip if in slice brake
+					unless ($convx_b{$pid}{$chr}{$bin_beg} && $convx_b{$pid}{$chr}{$bin_end}) { next; }
+					# Calculate rpm for bin
+					my $bin_rpm = (int($bin_rds/$global_rds2*1_000_000))/($max_rpm/20);
+					my $rpm_nrm = $bin_rpm <= 20 ? $bin_rpm : 20;
+					# Draw rpm
+					if ($rpm_nrm) {
+						# Color rpm
+						$page1->setrgbcolor(255/255,148/255,0/255);
+						$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), $rpm_nrm);
+						$page1->fill();
+					}
+					if ($bin_rpm > 20) {
+						# Color rpm
+						$page1->setrgbcolor(255/255,0/255,0/255);
+						$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)+20-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), 1);
+						$page1->fill();
+					}
+				}
+			}
+			# Go through each bin on minus strand
+			foreach my $bin (sort {$a <=> $b} keys %{$mns_rds_s2}) {
+				# Get pic coordinates
+				my $bin_chr = $mns_rds_s2->{$bin}->[0];
+				my $bin_beg = $mns_rds_s2->{$bin}->[1];
+				my $bin_end = $mns_rds_s2->{$bin}->[2];
+				my $bin_rds = $mns_rds_s2->{$bin}->[3];
+				# Skip if not same contig
+				unless ($chr eq $bin_chr) { next; }
+				# Check if reads bin is in region
+				if ($hom_reg{$pid}{$chr}[0] < $bin_beg && $hom_reg{$pid}{$chr}[1] > $bin_end) {
+					# Skip if in slice brake
+					unless ($convx_b{$pid}{$chr}{$bin_beg} && $convx_b{$pid}{$chr}{$bin_end}) { next; }
+					# Calculate rpm for bin
+					my $bin_rpm = (int($bin_rds/$global_rds2*1_000_000))/($max_rpm/20);
+					my $rpm_nrm = $bin_rpm <= 20 ? $bin_rpm : 20;
+					# Draw rpm
+					if ($rpm_nrm) {
+						# Color rpm
+						$page1->setrgbcolor(255/255,192/255,0/255);
+						$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)-($chr_shift*$chr_i)-$rpm_nrm, ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), $rpm_nrm);
+						$page1->fill();
+					}
+					if ($bin_rpm > 20) {
+						# Color rpm
+						$page1->setrgbcolor(255/255,0/255,0/255);
+						$page1->rectangle(40+$convx_b{$pid}{$chr}{$bin_beg}, 1650-(20+30+40+50)-20-($chr_shift*$chr_i), ($convx_b{$pid}{$chr}{$bin_end}-$convx_b{$pid}{$chr}{$bin_beg}+1), 1);
+						$page1->fill();
+					}
+				}
+			}
+
+			# Insert positions of slice breaks
+			foreach my $slice (sort {$a <=> $b} keys %{$slices{$pid}{$chr}}) {
+				if ($slice == 1) { next; }
+				# Get slice point coordinate
+				my $slice_pt = $slices{$pid}{$chr}{$slice}[0];
+				my $sgap_len = int(($slices{$pid}{$chr}{$slice}[0]-$slices{$pid}{$chr}{$slice-1}[1]+500)/1000);
+				# Draw white rectangle around slice point coordinate
+				$page1->setrgbcolor(1,1,1);
+				$page1->setrgbcolorstroke(0,1,0);
+				$page1->rectangle(40+$convx_b{$pid}{$chr}{$slice_pt}-5, 1650-69-($chr_shift*$chr_i), 10, 40);
+				$page1->fill();
+				# Black slice point lines
+				$page1->setrgbcolor(0,0,0);
+				$page1->setrgbcolorstroke(0,0,0);
+				$page1->line(40+$convx_b{$pid}{$chr}{$slice_pt}-5, 1650-29-($chr_shift*$chr_i), 40+$convx_b{$pid}{$chr}{$slice_pt}-5, 1650-29-($chr_shift*$chr_i)-41);
+				$page1->line(40+$convx_b{$pid}{$chr}{$slice_pt}+5, 1650-29-($chr_shift*$chr_i), 40+$convx_b{$pid}{$chr}{$slice_pt}+5, 1650-29-($chr_shift*$chr_i)-41);
+			}
 		}
+		# Close the file and write the PDF
+		$pdf->close;
 	}
-	# Convert into png data
-	open my $out, '>', "$gd_dir/$img_prefix.pic_$pid.png" or die;
-	binmode $out;
-	print $out $img->png;
-	# Close the file and write the PDF
-	$pdf->close;
+} else {
+    # Say that graphical output will be skipped
+    print("Perl module \'PDF::Create\' is not installed: Graphical output skipped.\n");
+    print("Install Perl modules with CPAN. See http://www.cpan.org/modules/INSTALL.html\n");
 }
 
 exit;
