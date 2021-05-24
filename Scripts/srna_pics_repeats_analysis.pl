@@ -1,12 +1,6 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use lib '/Users/dgebert/Dropbox/Perlmodules';
-use FileIO;
-use FastaIO;
-use SeqMan;
-use BioStat;
-use LWP::Simple;
 
 # Global constants
 my $min_len = 23;
@@ -121,11 +115,11 @@ foreach my $i (0..$#srna_file_prefixes) {
     }
 
     ## Print read counts
-    #$raw_count = BioStat::add_thousands_separators($raw_count);
-    $trimmed_count = BioStat::add_thousands_separators($trimmed_count);
-    $mir_count = BioStat::add_thousands_separators($mir_count);
-    $pir_uni_count = BioStat::add_thousands_separators(int($pir_uni_count));
-    $pir_all_count = BioStat::add_thousands_separators(int($pir_all_count));
+    #$raw_count = add_thousands_separators($raw_count);
+    $trimmed_count = add_thousands_separators($trimmed_count);
+    $mir_count = add_thousands_separators($mir_count);
+    $pir_uni_count = add_thousands_separators(int($pir_uni_count));
+    $pir_all_count = add_thousands_separators(int($pir_all_count));
     print("$trimmed_count\t$mir_count\t$pir_uni_count\t$pir_all_count\n");
     next;
 
@@ -137,7 +131,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $pic_expr_uni = get_loc_expression($pic_loc_file,"$file_prefix.filt.$min_len-$max_len.dm3.uni.bed");
         # Open output file
         my $outfile1 = "$file_prefix.filt.$min_len-$max_len.dm3.uni.pics.txt";
-        my $out1 = FileIO::open_outfile($outfile1);
+        my $out1 = open_outfile($outfile1);
         # Go through each line of locus data
         foreach my $pic (sort { $a cmp $b } keys %{$pic_expr_uni}) {
         	printf($out1 "%s\t%.2f\t%.2f\n", $pic,($pic_expr_uni->{$pic}->[0]/$mir_count*1_000_000),($pic_expr_uni->{$pic}->[1]/$mir_count*1_000_000));
@@ -159,7 +153,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $pic_expr_all = get_loc_expression($pic_loc_file,"$file_prefix.filt.$min_len-$max_len.dm3.all.bed");
         # Open output file
         my $outfile2 = "$file_prefix.filt.$min_len-$max_len.dm3.all.pics.txt";
-        my $out2 = FileIO::open_outfile($outfile2);
+        my $out2 = open_outfile($outfile2);
 
         # Go through each line of locus data
         foreach my $pic (sort { $a cmp $b } keys %{$pic_expr_all}) {
@@ -183,7 +177,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $rep_expr_uni = get_loc_expression($rep_loc_file,"$file_prefix.filt.$min_len-$max_len.dm3.uni.bed");
         # Open output file
         my $outfile3 = "$file_prefix.filt.$min_len-$max_len.dm3.uni.reps.txt";
-        my $out3 = FileIO::open_outfile($outfile3);
+        my $out3 = open_outfile($outfile3);
         # Go through each line of locus data
         foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_uni}) {
         	printf($out3 "%s\t%.2f\t%.2f\n", $rep,($rep_expr_uni->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_uni->{$rep}->[1]/$mir_count*1_000_000));
@@ -205,7 +199,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $rep_expr_all = get_loc_expression($rep_loc_file,"$file_prefix.filt.$min_len-$max_len.dm3.all.bed");
         # Open output file
         my $outfile4 = "$file_prefix.filt.$min_len-$max_len.dm3.all.reps.txt";
-        my $out4 = FileIO::open_outfile($outfile4);
+        my $out4 = open_outfile($outfile4);
         # Go through each line of locus data
         foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_all}) {
         	printf($out4 "%s\t%.2f\t%.2f\n", $rep,($rep_expr_all->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_all->{$rep}->[1]/$mir_count*1_000_000));
@@ -226,7 +220,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $rep_expr_uni_c1 = get_loc_expression($pic_rep_file_c1,"$file_prefix.filt.$min_len-$max_len.dm3.uni.bed");
         # Open output file
         my $outfile_c1 = "$file_prefix.filt.$min_len-$max_len.dm3.uni.reps.$pic_name.txt";
-        my $out_c1 = FileIO::open_outfile($outfile_c1);
+        my $out_c1 = open_outfile($outfile_c1);
         # Go through each line of locus data
         foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_uni_c1}) {
             printf($out_c1 "%s\t%.2f\t%.2f\n", $rep,($rep_expr_uni_c1->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_uni_c1->{$rep}->[1]/$mir_count*1_000_000));
@@ -240,7 +234,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $rep_expr_uni_other = get_loc_expression($pic_rep_file_other,"$file_prefix.filt.$min_len-$max_len.dm3.uni.bed");
         # Open output file
         my $outfile_other = "$file_prefix.filt.$min_len-$max_len.dm3.uni.reps.otherpics.txt";
-        my $out_other = FileIO::open_outfile($outfile_other);
+        my $out_other = open_outfile($outfile_other);
         # Go through each line of locus data
         foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_uni_other}) {
             printf($out_other "%s\t%.2f\t%.2f\n", $rep,($rep_expr_uni_other->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_uni_other->{$rep}->[1]/$mir_count*1_000_000));
@@ -255,7 +249,7 @@ foreach my $i (0..$#srna_file_prefixes) {
             my $rep_expr_all_c1 = get_loc_expression($pic_rep_file_c1,"$file_prefix.filt.$min_len-$max_len.dm3.all.bed");
             # Open output file
             my $outfile_c1 = "$file_prefix.filt.$min_len-$max_len.dm3.all.reps.$pic_name.txt";
-            my $out_c1 = FileIO::open_outfile($outfile_c1);
+            my $out_c1 = open_outfile($outfile_c1);
             # Go through each line of locus data
             foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_all_c1}) {
                 printf($out_c1 "%s\t%.2f\t%.2f\n", $rep,($rep_expr_all_c1->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_all_c1->{$rep}->[1]/$mir_count*1_000_000));
@@ -270,7 +264,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $rep_expr_all_other = get_loc_expression($pic_rep_file_other,"$file_prefix.filt.$min_len-$max_len.dm3.all.bed");
         # Open output file
         my $outfile_other = "$file_prefix.filt.$min_len-$max_len.dm3.all.reps.otherpics.txt";
-        my $out_other = FileIO::open_outfile($outfile_other);
+        my $out_other = open_outfile($outfile_other);
         # Go through each line of locus data
         foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_all_other}) {
             printf($out_other "%s\t%.2f\t%.2f\n", $rep,($rep_expr_all_other->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_all_other->{$rep}->[1]/$mir_count*1_000_000));
@@ -285,7 +279,7 @@ foreach my $i (0..$#srna_file_prefixes) {
             my $rep_expr_all_c1 = get_loc_expression_potential($pic_rep_file_c1,"$file_prefix.filt.$min_len-$max_len.dm3.all.bed");
             # Open output file
             my $outfile_c1 = "$file_prefix.filt.$min_len-$max_len.dm3.all.reps.$pic_name.pot.txt";
-            my $out_c1 = FileIO::open_outfile($outfile_c1);
+            my $out_c1 = open_outfile($outfile_c1);
             # Go through each line of locus data
             foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_all_c1}) {
                 printf($out_c1 "%s\t%.2f\t%.2f\n", $rep,($rep_expr_all_c1->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_all_c1->{$rep}->[1]/$mir_count*1_000_000));
@@ -301,7 +295,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $rep_expr_all_other = get_loc_expression_potential($pic_rep_file_other,"$file_prefix.filt.$min_len-$max_len.dm3.all.bed");
         # Open output file
         my $outfile_other = "$file_prefix.filt.$min_len-$max_len.dm3.all.reps.otherpics.pot.txt";
-        my $out_other = FileIO::open_outfile($outfile_other);
+        my $out_other = open_outfile($outfile_other);
         # Go through each line of locus data
         foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_all_other}) {
             printf($out_other "%s\t%.2f\t%.2f\n", $rep,($rep_expr_all_other->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_all_other->{$rep}->[1]/$mir_count*1_000_000));
@@ -314,7 +308,7 @@ foreach my $i (0..$#srna_file_prefixes) {
         my $rep_expr_all_c1 = get_loc_expression_potential($rep_loc_file,"$file_prefix.filt.$min_len-$max_len.dm3.all.bed");
         # Open output file
         my $outfile_c1 = "$file_prefix.filt.$min_len-$max_len.dm3.all.reps.pot.txt";
-        my $out_c1 = FileIO::open_outfile($outfile_c1);
+        my $out_c1 = open_outfile($outfile_c1);
         # Go through each line of locus data
         foreach my $rep (sort { $a cmp $b } keys %{$rep_expr_all_c1}) {
             printf($out_c1 "%s\t%.2f\t%.2f\n", $rep,($rep_expr_all_c1->{$rep}->[0]/$mir_count*1_000_000),($rep_expr_all_c1->{$rep}->[1]/$mir_count*1_000_000));
@@ -343,7 +337,7 @@ sub fastq_read_number {
     # Initialize read count
     my $reads_n = 0;
     # Open input file
-	my $in = FileIO::open_infile($infile);
+	my $in = open_infile($infile);
     # Go through each line
     while (my $line = <$in>) {
         $line =~ s/\s+$//; #better chomp
@@ -360,11 +354,11 @@ sub filter_read_length_fasta {
     # Take name of tab file
 	my($infile,$min,$max) = @_;
     # Get file data
-	my @in_data = FileIO::get_file_data_array($infile);
+	my @in_data = get_file_data_array($infile);
     # Open output file
     my $outfile = $infile;
     $outfile =~ s/\.fa/\.$min-$max\.fa/;
-    my $out = FileIO::open_outfile($outfile);
+    my $out = open_outfile($outfile);
     # Parse file content
     my $head = '';
     foreach my $line (@in_data) {
@@ -385,7 +379,7 @@ sub get_total_sam_reads {
     # Read count variable
     my $reads_count = 0;
     # Get file data
-    my $in = FileIO::open_infile($infile);
+    my $in = open_infile($infile);
     # Storage variable
     my %rna_count_per_seq = ();
     # Parse sam file
@@ -410,7 +404,7 @@ sub get_reps_in_pic {
     my($repeat_loci,$rep_cnts) = get_bed_data($repeats_bed_file);
     # Open output file
     my $outfile = "$repeats_bed_file.$pic_name.bed";
-    my $out = FileIO::open_outfile($outfile);
+    my $out = open_outfile($outfile);
     # Go through each chromosome
     foreach my $chr (sort { $a cmp $b } keys %{$genome_loci}) {
         # Go through each locus
@@ -454,7 +448,7 @@ sub get_reps_outside_given_pics {
     my %pic_names = map { $_ => 1 } @{$pic_names};
     # Open output file
     my $outfile = "$repeats_bed_file.otherpics.bed";
-    my $out = FileIO::open_outfile($outfile);
+    my $out = open_outfile($outfile);
     # Go through each chromosome
     foreach my $chr (sort { $a cmp $b } keys %{$genome_loci}) {
         # Go through each locus
@@ -499,7 +493,7 @@ sub get_loc_expression {
     # Storage variable
     my %gloc_expr = ();
     my $outfile = "test.$index.txt";
-    my $out = FileIO::open_outfile($outfile);
+    my $out = open_outfile($outfile);
     # Go through each chromosome
     foreach my $chr (sort { $a cmp $b } keys %{$genome_loci}) {
         # Go through each locus
@@ -590,7 +584,7 @@ sub get_loc_expression_potential {
     # Storage variable
     my %gloc_expr = ();
     my $outfile = "test.$index.txt";
-    my $out = FileIO::open_outfile($outfile);
+    my $out = open_outfile($outfile);
     # Go through each chromosome
     foreach my $chr (sort { $a cmp $b } keys %{$genome_loci}) {
         # Go through each locus
@@ -638,7 +632,7 @@ sub get_sam_ids_seqs {
 	my %sam_seqs = ();
     my %sam_rids = ();
 	# Open all mappers sam file
-	my $sam_a = FileIO::open_infile($samfile);
+	my $sam_a = open_infile($samfile);
 	# Go through each line
 	while (my $line = <$sam_a>) {
 		$line =~ s/\s+$//; #better chomp
@@ -664,7 +658,7 @@ sub get_bed_data {
 	# Take name of tab file
 	my($infile) = @_;
 	# Get file data
-    my $in = FileIO::open_infile($infile);
+    my $in = open_infile($infile);
 	# Global tree hashes for each species
 	my %data_fields = ();
     my %hits_per_id = ();
@@ -690,7 +684,7 @@ sub get_table_sum {
     # Count
     my $count = 0;
     # Get file data
-    my @file_data = FileIO::get_file_data_array($infile);
+    my @file_data = get_file_data_array($infile);
     # Parse file data
     foreach my $line (@file_data) {
         # Get data fields
@@ -699,4 +693,67 @@ sub get_table_sum {
         $count += ($d[1]+$d[2]);
     }
     return $count;
+}
+
+# Open input file
+# Usage: my $in = open_infile($infile);
+sub open_infile {
+	# Take input file name
+    my($file) = @_;
+    # Open input file
+    my $fh;
+    if ($file =~ /.gz$/) {
+		open($fh, "gunzip -c $file |") or die("Cannot open file '$file': $!\n");
+	} else {
+    	open($fh, '<', $file) or die("Cannot open file '$file': $!\n");
+    }
+    # Return filehandle
+    return $fh;
+}
+
+# Open output file
+# Usage: my $out = open_outfile($outfile);
+sub open_outfile {
+	# Take output file name
+    my($file) = @_;
+    # Open output file
+    open(my $fh, '>', $file) or die("Cannot open file '$file': $!\n");
+    # Return filehandle
+    return $fh;
+}
+
+# Extract file data and save in array
+# Usage: my @filedata = get_file_data_array($file);
+sub get_file_data_array {
+	# Take input file name
+    my($file,$ref_opt) = @_;
+    my @filedata = ();
+    $ref_opt = 0 unless $ref_opt;
+	# Open input file
+    my $fh = open_infile($file);
+	# Extract lines and save in array
+    while (my $line = <$fh>) {
+    	$line =~ s/\s+$//; #better chomp
+    	push(@filedata, $line);
+    }
+	# Close file
+    close($fh) or die("Unable to close: $!\n");
+	# Return array containing file data
+    if ($ref_opt) {
+    	return \@filedata;
+    } else {
+    	return @filedata;
+    }
+}
+
+# Add commas as thounds separators
+sub add_thousands_separators {
+	# Take number
+	my($number) = @_;
+	my($predec,$decimal) = split(/\./,$number);
+	# Add commas as thousands separators to number
+	$predec = reverse join ",", (reverse $predec) =~ /(\d{1,3})/g;
+	# Return number
+	$number = $decimal ? $predec.'.'.$decimal : $predec;
+	return $number;
 }

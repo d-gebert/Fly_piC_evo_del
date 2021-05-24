@@ -1,11 +1,6 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use lib '/Users/dgebert/Dropbox/Perlmodules';
-use lib '/home/dgebert/Dropbox/Perlmodules';
-use FileIO;
-use FastaIO;
-use BioStat;
 
 # Global constants
 my $picfile_base = 'fin_pics.bed';
@@ -16,7 +11,6 @@ my $bin_size = 500;
 # Global variables
 my @pic_locs = ();
 my @pic_locs_top = ();
-my @pic_locs_not = ();
 my @cds_locs = ();
 my @chr_size = ();
 # Options
@@ -56,14 +50,6 @@ foreach my $sp (@species) {
 	$pic_locs_top[$spec_id{$sp}] = get_tab_fields($pic_file,1);
 }
 
-# Get all pic loci for subsequent filtering top pics
-foreach my $sp (@species) {
-	# Get pic file name
-	my $pic_file = "$fin_pics_dir/$sp.$picfile_base";
-	# Get pic locs
-	$pic_locs_not[$spec_id{$sp}] = get_tab_fields($pic_file,1);
-}
-
 # Get pics that are not in top list
 foreach my $i (0..$#species) {
 	foreach my $pic (keys %{$pic_locs[$i]}) {
@@ -78,10 +64,6 @@ foreach my $i (0..$#species) {
 			if ($pic_pid eq $top_pid) {
 				$in_top_list = 1;
 			}
-		}
-		# Delete pic from not list if it is a top pic
-		if ($in_top_list) {
-			delete($pic_locs_not[$i]->{$pic});
 		}
 	}
 }
@@ -104,14 +86,13 @@ foreach my $sp (@species) {
 	$chr_size[$spec_id{$sp}] = get_chromosome_sizes($gnm_file);
 }
 
-my $pic_te_distr = pic_flank_exon_distribution(\@pic_locs,$bin_size);
-my $top_te_distr = pic_flank_exon_distribution(\@pic_locs_top,$bin_size);
-my $not_te_distr = pic_flank_exon_distribution(\@pic_locs_not,$bin_size);
+my $pic_cds_distr = pic_flank_exon_distribution(\@pic_locs,$bin_size);
+my $top_cds_distr = pic_flank_exon_distribution(\@pic_locs_top,$bin_size);
 
-my $out = FileIO::open_outfile('pic_flank_cds_distr.txt');
-print($out "pos\tall_pics\ttop_pics\tnot_pics\n");
-foreach my $pos (sort {$a <=> $b} keys %{$pic_te_distr}) {
-	print($out "$pos\t$pic_te_distr->{$pos}\t$top_te_distr->{$pos}\t$not_te_distr->{$pos}\n");
+my $out = open_outfile('pic_flank_cds_distr.txt');
+print($out "pos\tall_pics\ttop_pics\n");
+foreach my $pos (sort {$a <=> $b} keys %{$pic_cds_distr}) {
+	print($out "$pos\t$pic_cds_distr->{$pos}\t$top_cds_distr->{$pos}\n");
 }
 
 exit;
@@ -122,7 +103,7 @@ sub get_tab_fields {
 	# Take name of tab file
 	my($infile,$skip_header) = @_;
 	# Get file data
-	my @in_data = FileIO::get_file_data_array($infile);
+	my @in_data = get_file_data_array($infile);
 	if ($skip_header) { shift(@in_data); }
 	# Global tree hashes for each species
 	my %data_fields = ();
@@ -150,8 +131,8 @@ sub get_cds_blast_hits {
 		system("blastn -query $cdsfile -subject $gnmfile -out $blnfile -outfmt \'$outfmt\'");
 	}
 	# Open blast file and bed output file
-	my $bln = FileIO::open_infile($blnfile);
-	my $bed = FileIO::open_outfile("$blnfile.bed");
+	my $bln = open_infile($blnfile);
+	my $bed = open_outfile("$blnfile.bed");
 	# Go through each blast file line
 	while (my $line = <$bln>) {
 		chomp($line);
@@ -179,7 +160,7 @@ sub get_bed_data {
 	# Storage variable
 	my %bed_data = ();
 	# Get file data
-	my @bed_data = FileIO::get_file_data_array($bed_file);
+	my @bed_data = get_file_data_array($bed_file);
 	# Parse bed file
 	foreach my $line (@bed_data) {
 		# Get line data
@@ -197,7 +178,7 @@ sub get_chromosome_sizes {
 	my %chr_sizes = ();
 	my $chr = '';
 	# Open input file
-	my $in = FileIO::open_infile($fasta_file);
+	my $in = open_infile($fasta_file);
 	# Parse fasta file
 	while (my $line = <$in>) {
 		$line =~ s/\s+$//; #better chomp
@@ -219,7 +200,7 @@ sub pic_flank_exon_distribution {
 	# Parameters
 	my $flank_len = 20_000;
 	my $edge_len  = 5_000;
-	# Get TE content for each relative position
+	# Get cds content for each relative position
 	my %pos_rel = ();
 	my $n_pics  = 0;
 	my $n_no_flanks = 0;
@@ -279,10 +260,10 @@ sub pic_flank_exon_distribution {
 					$rel_pos++;
 				}
 			}
-			# Get TE content of pic loc and flanking region
+			# Get cds content of pic loc and flanking region
 			my %rep_poss = ();
 			foreach my $rep (@{$cds_locs[$i]->{$pic_chr}}) {
-				# Get TE coordinates
+				# Get cds coordinates
 				my $rep_beg = $rep->[1];
 				my $rep_end = $rep->[2];
 				# Check for overlap with upstream flank
@@ -323,10 +304,61 @@ sub pic_flank_exon_distribution {
 		%pos_rel = %bin_rel;
 	}
 	print("$n_pics \($n_no_flanks\)\n");
-	# Get fractions instead of absolute TE position counts
+	# Get fractions instead of absolute cds position counts
 	foreach my $pos (keys %pos_rel) {
 		$pos_rel{$pos} = 0 unless $pos_rel{$pos};
 		$pos_rel{$pos} = $pos_rel{$pos}/$n_pics;
 	}
 	return \%pos_rel;
+}
+
+# Open input file
+# Usage: my $in = open_infile($infile);
+sub open_infile {
+	# Take input file name
+    my($file) = @_;
+    # Open input file
+    my $fh;
+    if ($file =~ /.gz$/) {
+		open($fh, "gunzip -c $file |") or die("Cannot open file '$file': $!\n");
+	} else {
+    	open($fh, '<', $file) or die("Cannot open file '$file': $!\n");
+    }
+    # Return filehandle
+    return $fh;
+}
+
+# Open output file
+# Usage: my $out = open_outfile($outfile);
+sub open_outfile {
+	# Take output file name
+    my($file) = @_;
+    # Open output file
+    open(my $fh, '>', $file) or die("Cannot open file '$file': $!\n");
+    # Return filehandle
+    return $fh;
+}
+
+# Extract file data and save in array
+# Usage: my @filedata = get_file_data_array($file);
+sub get_file_data_array {
+	# Take input file name
+    my($file,$ref_opt) = @_;
+    my @filedata = ();
+    $ref_opt = 0 unless $ref_opt;
+	# Open input file
+    my $fh = open_infile($file);
+	# Extract lines and save in array
+    while (my $line = <$fh>) {
+    	$line =~ s/\s+$//; #better chomp
+    	push(@filedata, $line);
+    }
+	# Close file
+    close($fh) or die("Unable to close: $!\n");
+	# Return array containing file data
+    if ($ref_opt) {
+    	return \@filedata;
+    } else {
+    	return @filedata;
+    }
 }
