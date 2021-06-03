@@ -324,14 +324,10 @@ foreach my $i (0..$#species) {
 			push(@zero_pt_lens,$zero_pt_len);
 			# Count processed loci
 			$num_locs++;
-			#last if $num_locs == 535;
         }
-		#last if $num_locs == 535;
 	}
-	#last if $num_locs == 535;
 }
 
-#print(STDERR "$num_locs\n");
 my $median_loc_len = get_median(\@zero_pt_lens);
 my $averag_loc_len = get_mean(\@zero_pt_lens);
 my $median_loc_len_hom = get_median(\@zero_pt_lens_hom);
