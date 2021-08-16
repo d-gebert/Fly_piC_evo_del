@@ -107,6 +107,12 @@ foreach my $pos (sort {$a <=> $b} keys %div_pre_pos) {
     }
 }
 
+foreach my $perc_pos (sort {$b <=> $a} keys %div_flipped) {
+    $div_flipped{$perc_pos} = $div_flipped{$perc_pos}*2;
+    $ins_flipped{$perc_pos} = $ins_flipped{$perc_pos}*2;
+    last;
+}
+
 my $outfile3 = "$pic_file.tedivs.flip.tbl";
 my $out3 = open_outfile($outfile3);
 
@@ -158,6 +164,7 @@ sub get_tab_fields {
 	foreach my $line (@in_data) {
 		# Get line data
         my @d = split(/\t/,$line);
+        next unless $d[1] =~ /\d+/;
         # Save data fields
         @{$data_fields{$id_i}} = @d;
 		$id_i++;
