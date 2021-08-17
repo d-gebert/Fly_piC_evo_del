@@ -1,0 +1,51 @@
+==================================================
+file name: Dyak_filtered_50k.fasta  
+sequences:            78
+total length:  142814604 bp  (142814604 bp excl N/X-runs)
+GC level:         42.57 %
+bases masked:   26523636 bp ( 18.57 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:                0            0 bp    0.00 %
+      ALUs            0            0 bp    0.00 %
+      MIRs            0            0 bp    0.00 %
+
+LINEs:             5186      3653382 bp    2.56 %
+      LINE1           0            0 bp    0.00 %
+      LINE2           0            0 bp    0.00 %
+      L3/CR1        814       421231 bp    0.29 %
+
+LTR elements:     19333     11964130 bp    8.38 %
+      ERVL            0            0 bp    0.00 %
+      ERVL-MaLRs      0            0 bp    0.00 %
+      ERV_classI      0            0 bp    0.00 %
+      ERV_classII     0            0 bp    0.00 %
+
+DNA elements:      4351      1761355 bp    1.23 %
+     hAT-Charlie    374        22468 bp    0.02 %
+     TcMar-Tigger     0            0 bp    0.00 %
+
+Unclassified:     12463      3856968 bp    2.70 %
+
+Total interspersed repeats: 21235835 bp   14.87 %
+
+
+Small RNA:           58       445222 bp    0.31 %
+
+Satellites:         366       649919 bp    0.46 %
+Simple repeats:    2973       369595 bp    0.26 %
+Low complexity:       0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be homo          
+RepeatMasker Combined Database: Dfam_3.0
+                                         
+run with rmblastn version 2.9.0+
+The query was compared to classified sequences in "Dyak_50k-families.fa"
+

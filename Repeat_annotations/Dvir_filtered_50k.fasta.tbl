@@ -1,0 +1,51 @@
+==================================================
+file name: Dvir_filtered_50k.fasta  
+sequences:           114
+total length:  169009692 bp  (169009692 bp excl N/X-runs)
+GC level:         40.45 %
+bases masked:   38336909 bp ( 22.68 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:                0            0 bp    0.00 %
+      ALUs            0            0 bp    0.00 %
+      MIRs            0            0 bp    0.00 %
+
+LINEs:             7859      6905671 bp    4.09 %
+      LINE1           0            0 bp    0.00 %
+      LINE2           0            0 bp    0.00 %
+      L3/CR1       2781      1806784 bp    1.07 %
+
+LTR elements:     26936     10838722 bp    6.41 %
+      ERVL            0            0 bp    0.00 %
+      ERVL-MaLRs      0            0 bp    0.00 %
+      ERV_classI      0            0 bp    0.00 %
+      ERV_classII   989       128876 bp    0.08 %
+
+DNA elements:     28736      3342192 bp    1.98 %
+     hAT-Charlie    963        60755 bp    0.04 %
+     TcMar-Tigger     0            0 bp    0.00 %
+
+Unclassified:     41141     11144308 bp    6.59 %
+
+Total interspersed repeats: 32230893 bp   19.07 %
+
+
+Small RNA:          317       759125 bp    0.45 %
+
+Satellites:           0            0 bp    0.00 %
+Simple repeats:    1360       564616 bp    0.33 %
+Low complexity:       0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be homo          
+RepeatMasker Combined Database: Dfam_3.0
+                                         
+run with rmblastn version 2.9.0+
+The query was compared to classified sequences in "Dvir_50k-families.fa"
+

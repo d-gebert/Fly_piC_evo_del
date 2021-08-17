@@ -1,0 +1,51 @@
+==================================================
+file name: Dana_filtered_50k.fasta  
+sequences:           205
+total length:  184647108 bp  (184647108 bp excl N/X-runs)
+GC level:         41.75 %
+bases masked:   64235529 bp ( 34.79 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:              199        50479 bp    0.03 %
+      ALUs            0            0 bp    0.00 %
+      MIRs            0            0 bp    0.00 %
+
+LINEs:            20384     14377115 bp    7.79 %
+      LINE1          89        34007 bp    0.02 %
+      LINE2           0            0 bp    0.00 %
+      L3/CR1       9189      6369972 bp    3.45 %
+
+LTR elements:     37771     25763002 bp   13.95 %
+      ERVL            0            0 bp    0.00 %
+      ERVL-MaLRs      0            0 bp    0.00 %
+      ERV_classI    226        19061 bp    0.01 %
+      ERV_classII   271        20002 bp    0.01 %
+
+DNA elements:      7842      2613945 bp    1.42 %
+     hAT-Charlie     74        26415 bp    0.01 %
+     TcMar-Tigger     0            0 bp    0.00 %
+
+Unclassified:     49874     15854510 bp    8.59 %
+
+Total interspersed repeats: 58659051 bp   31.77 %
+
+
+Small RNA:          222       287110 bp    0.16 %
+
+Satellites:        1507       650076 bp    0.35 %
+Simple repeats:     255       270735 bp    0.15 %
+Low complexity:       0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be homo          
+RepeatMasker Combined Database: Dfam_3.0
+                                         
+run with rmblastn version 2.9.0+
+The query was compared to classified sequences in "Dana_50k-families.fa"
+

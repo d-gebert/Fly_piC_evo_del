@@ -1,0 +1,51 @@
+==================================================
+file name: Dmoj_filtered_50k.fasta  
+sequences:           104
+total length:  167723101 bp  (167723101 bp excl N/X-runs)
+GC level:         39.69 %
+bases masked:   28795714 bp ( 17.17 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:                0            0 bp    0.00 %
+      ALUs            0            0 bp    0.00 %
+      MIRs            0            0 bp    0.00 %
+
+LINEs:            16921      4970282 bp    2.96 %
+      LINE1        1936       407777 bp    0.24 %
+      LINE2           0            0 bp    0.00 %
+      L3/CR1        434       416505 bp    0.25 %
+
+LTR elements:     30522      7889574 bp    4.70 %
+      ERVL            0            0 bp    0.00 %
+      ERVL-MaLRs      0            0 bp    0.00 %
+      ERV_classI   1148       170644 bp    0.10 %
+      ERV_classII  4348       674522 bp    0.40 %
+
+DNA elements:     39574      5868944 bp    3.50 %
+     hAT-Charlie   3344       260241 bp    0.16 %
+     TcMar-Tigger     0            0 bp    0.00 %
+
+Unclassified:     19010      5259981 bp    3.14 %
+
+Total interspersed repeats: 23988781 bp   14.30 %
+
+
+Small RNA:           70       314100 bp    0.19 %
+
+Satellites:        1478       172486 bp    0.10 %
+Simple repeats:       0            0 bp    0.00 %
+Low complexity:       0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be homo          
+RepeatMasker Combined Database: Dfam_3.0
+                                         
+run with rmblastn version 2.9.0+
+The query was compared to classified sequences in "Dmoj_50k-families.fa"
+

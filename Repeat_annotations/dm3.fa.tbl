@@ -1,0 +1,59 @@
+==================================================
+file name: dm3.fa                   
+sequences:            15
+total length:  168736537 bp  (162367812 bp excl N/X-runs)
+GC level:         41.74 %
+bases masked:   36430455 bp ( 21.59 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+Retroelements        36516     28741817 bp   17.03 %
+   SINEs:                6          672 bp    0.00 %
+   Penelope              0            0 bp    0.00 %
+   LINEs:            15375     10710171 bp    6.35 %
+    CRE/SLACS            0            0 bp    0.00 %
+     L2/CR1/Rex       1131       968850 bp    0.57 %
+     R1/LOA/Jockey   13445      9180842 bp    5.44 %
+     R2/R4/NeSL        366       199742 bp    0.12 %
+     RTE/Bov-B           0            0 bp    0.00 %
+     L1/CIN4             0            0 bp    0.00 %
+   LTR elements:     21135     18030974 bp   10.69 %
+     BEL/Pao          4258      4031194 bp    2.39 %
+     Ty1/Copia        1240       993541 bp    0.59 %
+     Gypsy/DIRS1     15111     12574185 bp    7.45 %
+       Retroviral        0            0 bp    0.00 %
+
+DNA transposons      11098      2804766 bp    1.66 %
+   hobo-Activator      306       107098 bp    0.06 %
+   Tc1-IS630-Pogo       36        20425 bp    0.01 %
+   En-Spm                0            0 bp    0.00 %
+   MuDR-IS905           14         6471 bp    0.00 %
+   PiggyBac              0            0 bp    0.00 %
+   Tourist/Harbinger     0            0 bp    0.00 %
+   Other (Mirage,     4527      1270594 bp    0.75 %
+    P-element, Transib)
+
+Rolling-circles       1132        88981 bp    0.05 %
+
+Unclassified:           78         5359 bp    0.00 %
+
+Total interspersed repeats:    31551942 bp   18.70 %
+
+
+Small RNA:               0            0 bp    0.00 %
+
+Satellites:              0            0 bp    0.00 %
+Simple repeats:      89034      4275811 bp    2.53 %
+Low complexity:      10856       513721 bp    0.30 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+RepeatMasker version 4.1.1 , default mode
+                                        
+run with rmblastn version 2.10.0+
+The query was compared to classified sequences in "Dmel-families.fa"
+

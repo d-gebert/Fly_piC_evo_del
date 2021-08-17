@@ -1,0 +1,51 @@
+==================================================
+file name: Dper_filtered_50k.fasta  
+sequences:           207
+total length:  159542900 bp  (159542900 bp excl N/X-runs)
+GC level:         44.94 %
+bases masked:   35831522 bp ( 22.46 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:               70         6999 bp    0.00 %
+      ALUs            0            0 bp    0.00 %
+      MIRs            0            0 bp    0.00 %
+
+LINEs:            13021      8437432 bp    5.29 %
+      LINE1           0            0 bp    0.00 %
+      LINE2         287       218403 bp    0.14 %
+      L3/CR1       5847      3564488 bp    2.23 %
+
+LTR elements:     16664     11816729 bp    7.41 %
+      ERVL            0            0 bp    0.00 %
+      ERVL-MaLRs      0            0 bp    0.00 %
+      ERV_classI    618        62752 bp    0.04 %
+      ERV_classII    83         8770 bp    0.01 %
+
+DNA elements:     11640      2326500 bp    1.46 %
+     hAT-Charlie     34        47581 bp    0.03 %
+     TcMar-Tigger     0            0 bp    0.00 %
+
+Unclassified:     45153      9496141 bp    5.95 %
+
+Total interspersed repeats: 32083801 bp   20.11 %
+
+
+Small RNA:           33        21881 bp    0.01 %
+
+Satellites:         101        47634 bp    0.03 %
+Simple repeats:       0            0 bp    0.00 %
+Low complexity:       0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be homo          
+RepeatMasker Combined Database: Dfam_3.0
+                                         
+run with rmblastn version 2.9.0+
+The query was compared to classified sequences in "Dper_50k-families.fa"
+

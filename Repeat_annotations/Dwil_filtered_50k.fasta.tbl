@@ -1,0 +1,51 @@
+==================================================
+file name: Dwil_filtered_50k.fasta  
+sequences:           363
+total length:  191766076 bp  (191766076 bp excl N/X-runs)
+GC level:         36.93 %
+bases masked:   51514757 bp ( 26.86 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:               46         3565 bp    0.00 %
+      ALUs            0            0 bp    0.00 %
+      MIRs            0            0 bp    0.00 %
+
+LINEs:            13868      9400351 bp    4.90 %
+      LINE1        1307       105040 bp    0.05 %
+      LINE2           0            0 bp    0.00 %
+      L3/CR1       5029      4853061 bp    2.53 %
+
+LTR elements:     29096     16407655 bp    8.56 %
+      ERVL            0            0 bp    0.00 %
+      ERVL-MaLRs      0            0 bp    0.00 %
+      ERV_classI   2519       232166 bp    0.12 %
+      ERV_classII   197        43274 bp    0.02 %
+
+DNA elements:     32841      5822824 bp    3.04 %
+     hAT-Charlie   5143       330258 bp    0.17 %
+     TcMar-Tigger   280        86855 bp    0.05 %
+
+Unclassified:     53914     12608666 bp    6.58 %
+
+Total interspersed repeats: 44243061 bp   23.07 %
+
+
+Small RNA:          276       425432 bp    0.22 %
+
+Satellites:           0            0 bp    0.00 %
+Simple repeats:    1820       191568 bp    0.10 %
+Low complexity:       0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be homo          
+RepeatMasker Combined Database: Dfam_3.0
+                                         
+run with rmblastn version 2.9.0+
+The query was compared to classified sequences in "Dwil_50k-families.fa"
+

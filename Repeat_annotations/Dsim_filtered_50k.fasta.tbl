@@ -1,0 +1,51 @@
+==================================================
+file name: Dsim_filtered_50k.fasta  
+sequences:            65
+total length:  133459641 bp  (133459641 bp excl N/X-runs)
+GC level:         42.60 %
+bases masked:   17279054 bp ( 12.95 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:              141        85084 bp    0.06 %
+      ALUs            0            0 bp    0.00 %
+      MIRs            0            0 bp    0.00 %
+
+LINEs:             3933      3611944 bp    2.71 %
+      LINE1           0            0 bp    0.00 %
+      LINE2           0            0 bp    0.00 %
+      L3/CR1        706       653320 bp    0.49 %
+
+LTR elements:      9015      5485467 bp    4.11 %
+      ERVL            0            0 bp    0.00 %
+      ERVL-MaLRs      0            0 bp    0.00 %
+      ERV_classI     88        33566 bp    0.03 %
+      ERV_classII     0            0 bp    0.00 %
+
+DNA elements:      2620      1159356 bp    0.87 %
+     hAT-Charlie      0            0 bp    0.00 %
+     TcMar-Tigger     0            0 bp    0.00 %
+
+Unclassified:      7611      4558576 bp    3.42 %
+
+Total interspersed repeats: 14900427 bp   11.16 %
+
+
+Small RNA:          142       626291 bp    0.47 %
+
+Satellites:         553       570892 bp    0.43 %
+Simple repeats:      11         2050 bp    0.00 %
+Low complexity:       0            0 bp    0.00 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be homo          
+RepeatMasker Combined Database: Dfam_3.0
+                                         
+run with rmblastn version 2.9.0+
+The query was compared to classified sequences in "Dsim_50k-families.fa"
+
