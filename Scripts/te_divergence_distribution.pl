@@ -24,6 +24,11 @@ print("\n--- $0 ---\n");
 # Collect command line arguments
 my $USAGE = "perl $0\n";
 
+# Check folder structure
+unless (-d $genomes_dir && -d $fin_pic_dir && -d $fin_pic_te_dir) {
+	die("\nCannot find folders: $genomes_dir & $fin_pic_dir\n");
+}
+
 foreach my $i (0..$#species) {
     #next unless $i == 0;
     # Get repeatmasker file name
